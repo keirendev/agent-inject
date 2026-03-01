@@ -93,11 +93,21 @@ module "agent" {
   enable_refund_confirmation = var.enable_refund_confirmation
   enable_excessive_tools     = var.enable_excessive_tools
 }
-#
-# module "frontend" {
-#   source = "./modules/frontend"
-#   ...
-# }
+# --- Frontend chat UI (EC2 + Streamlit, operator IP only) ---
+module "frontend" {
+  source = "./modules/frontend"
+
+  project_name      = var.project_name
+  environment       = var.environment
+  aws_region        = var.aws_region
+  vpc_id            = module.networking.vpc_id
+  subnet_id         = module.networking.public_subnet_ids[0]
+  security_group_id = module.networking.frontend_sg_id
+  agent_id          = module.agent.agent_id
+  agent_alias_id    = module.agent.agent_alias_id
+}
+
+# --- Future modules (uncomment as built) ---
 #
 # module "observability" {
 #   source = "./modules/observability"

@@ -101,3 +101,10 @@ output "agent_alias_id" {
   description = "Bedrock Agent Alias ID (use this to invoke the agent)"
   value       = module.agent.agent_alias_id
 }
+
+# --- Frontend ---
+
+output "frontend_url" {
+  description = "URL to access the frontend chat UI"
+  value       = module.frontend.frontend_url
+}
