@@ -83,6 +83,13 @@ output "opensearch_collection_endpoint" {
   value       = module.knowledge_base.opensearch_collection_endpoint
 }
 
+# --- Guardrails ---
+
+output "guardrail_id" {
+  description = "Bedrock Guardrail ID"
+  value       = module.guardrails.guardrail_id
+}
+
 # --- Agent ---
 
 output "agent_id" {
