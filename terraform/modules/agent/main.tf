@@ -20,11 +20,15 @@ data "aws_region" "current" {}
 locals {
   agent_name = "${var.project_name}-${var.environment}-support-agent"
 
-  # Select system prompt based on scenario toggle
+  # Select system prompt based on scenario toggles
+  # - use_weak_system_prompt: switches to the vague prompt (no security boundaries)
+  # - enable_refund_confirmation: conditionally includes refund confirmation rule in secure prompt
   system_prompt = var.use_weak_system_prompt ? (
     file("${path.module}/../../../prompts/system-prompt-weak.txt")
   ) : (
-    file("${path.module}/../../../prompts/system-prompt-secure.txt")
+    templatefile("${path.module}/../../../prompts/system-prompt-secure.txt", {
+      enable_refund_confirmation = var.enable_refund_confirmation
+    })
   )
 }
 
@@ -151,7 +155,11 @@ resource "aws_bedrockagent_agent_action_group" "customer_tools" {
   }
 
   api_schema {
-    payload = file("${path.module}/../../../src/lambda/agent_tools/openapi.yaml")
+    payload = var.enable_excessive_tools ? (
+      file("${path.module}/../../../src/lambda/agent_tools/openapi-extended.yaml")
+    ) : (
+      file("${path.module}/../../../src/lambda/agent_tools/openapi.yaml")
+    )
   }
 }
 
@@ -196,9 +204,10 @@ resource "null_resource" "prepare_agent" {
   }
 
   triggers = {
-    agent_id         = aws_bedrockagent_agent.support_agent.agent_id
-    action_group_id  = aws_bedrockagent_agent_action_group.customer_tools.action_group_id
-    kb_association   = aws_bedrockagent_agent_knowledge_base_association.kb.knowledge_base_id
+    agent_id              = aws_bedrockagent_agent.support_agent.agent_id
+    action_group_id       = aws_bedrockagent_agent_action_group.customer_tools.action_group_id
+    kb_association        = aws_bedrockagent_agent_knowledge_base_association.kb.knowledge_base_id
+    enable_excessive_tools = var.enable_excessive_tools
   }
 
   depends_on = [
