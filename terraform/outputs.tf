@@ -53,3 +53,20 @@ output "customers_table_name" {
   description = "DynamoDB table for customer records"
   value       = module.data.customers_table_name
 }
+
+# --- Agent Tools ---
+
+output "agent_tools_lambda_arn" {
+  description = "ARN of the agent tools Lambda function"
+  value       = module.agent_tools.lambda_arn
+}
+
+output "agent_tools_lambda_name" {
+  description = "Name of the agent tools Lambda function"
+  value       = module.agent_tools.lambda_function_name
+}
+
+output "agent_tools_role_arn" {
+  description = "ARN of the Lambda execution role"
+  value       = module.agent_tools.lambda_role_arn
+}

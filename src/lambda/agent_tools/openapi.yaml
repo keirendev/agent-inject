@@ -1,0 +1,150 @@
+openapi: 3.0.0
+info:
+  title: NovaCrest Customer Support Tools
+  description: Tools for the NovaCrest customer support AI agent. Provides customer lookup, refund eligibility checking, refund processing, and knowledge base search.
+  version: 1.0.0
+
+paths:
+  /lookup_customer:
+    post:
+      operationId: lookup_customer
+      summary: Look up a customer by their ID or email address
+      description: Retrieves customer information including name, email, subscription tier, status, and monthly spend. Use this when a customer asks about their account or you need to identify them.
+      parameters:
+        - name: customer_id
+          in: query
+          description: The unique customer identifier (e.g. C001). Provide this OR email, not both.
+          required: false
+          schema:
+            type: string
+        - name: email
+          in: query
+          description: The customer's email address. Provide this OR customer_id, not both.
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Customer record found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  customer:
+                    type: object
+                    properties:
+                      customer_id:
+                        type: string
+                      name:
+                        type: string
+                      email:
+                        type: string
+                      subscription_tier:
+                        type: string
+                        enum: [free, pro, enterprise]
+                      subscription_status:
+                        type: string
+                        enum: [active, cancelled, suspended]
+                      monthly_spend:
+                        type: number
+                      refund_eligible:
+                        type: boolean
+
+  /check_refund_eligibility:
+    post:
+      operationId: check_refund_eligibility
+      summary: Check if a customer is eligible for a refund
+      description: Evaluates whether a customer qualifies for a refund based on their subscription tier, account status, and refund history. Use this before attempting to process a refund.
+      parameters:
+        - name: customer_id
+          in: query
+          description: The unique customer identifier (e.g. C001)
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Eligibility result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  eligible:
+                    type: boolean
+                  reason:
+                    type: string
+                  customer_id:
+                    type: string
+                  max_refund_amount:
+                    type: number
+
+  /process_refund:
+    post:
+      operationId: process_refund
+      summary: Process a refund for a customer
+      description: Issues a refund to an eligible customer. The maximum single refund is $500. Amounts over $500 require manager escalation. Always check eligibility first and confirm the refund details with the customer before processing.
+      parameters:
+        - name: customer_id
+          in: query
+          description: The unique customer identifier (e.g. C001)
+          required: true
+          schema:
+            type: string
+        - name: amount
+          in: query
+          description: The refund amount in US dollars (e.g. 49.99)
+          required: true
+          schema:
+            type: string
+        - name: reason
+          in: query
+          description: The reason for the refund (e.g. billing error, service disruption)
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Refund processing result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [approved, denied, escalation_required]
+                  message:
+                    type: string
+                  customer_id:
+                    type: string
+                  amount:
+                    type: number
+                  reason:
+                    type: string
+
+  /search_knowledge_base:
+    post:
+      operationId: search_knowledge_base
+      summary: Search the knowledge base for product information
+      description: Searches NovaCrest product documentation, support policies, and guides to find relevant information. Use this to answer questions about features, pricing, SLAs, refund policies, and integrations.
+      parameters:
+        - name: query
+          in: query
+          description: The search query describing what information you need
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  query:
+                    type: string
