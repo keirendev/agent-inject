@@ -80,6 +80,14 @@ resource "aws_iam_role_policy" "agent_permissions" {
         ]
         Resource = "arn:aws:bedrock:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:knowledge-base/${var.knowledge_base_id}"
       },
+      {
+        Sid    = "ApplyGuardrail"
+        Effect = "Allow"
+        Action = [
+          "bedrock:ApplyGuardrail",
+        ]
+        Resource = "arn:aws:bedrock:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:guardrail/${var.guardrail_id}"
+      },
     ]
   })
 }

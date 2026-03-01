@@ -1,5 +1,5 @@
 """
-NovaCrest AI Security Lab — Frontend Chat Application
+NovaCrest AI Security Lab -- Frontend Chat Application
 
 Streamlit chat UI for interacting with the NovaCrest Support Agent.
 Displays agent responses and a debug trace panel showing reasoning steps,
@@ -20,7 +20,6 @@ import streamlit as st
 AWS_REGION = os.environ.get("AWS_REGION", "ap-southeast-2")
 AGENT_ID = os.environ.get("AGENT_ID", "")
 AGENT_ALIAS_ID = os.environ.get("AGENT_ALIAS_ID", "")
-FRONTEND_PASSWORD = os.environ.get("FRONTEND_PASSWORD", "novacrest-lab")
 
 # ---------------------------------------------------------------------------
 # Page config
@@ -31,25 +30,6 @@ st.set_page_config(
     page_icon="🛡️",
     layout="wide",
 )
-
-# ---------------------------------------------------------------------------
-# Authentication
-# ---------------------------------------------------------------------------
-
-if "authenticated" not in st.session_state:
-    st.session_state.authenticated = False
-
-if not st.session_state.authenticated:
-    st.title("NovaCrest AI Security Lab")
-    st.markdown("Enter the lab access password to continue.")
-    password = st.text_input("Password", type="password")
-    if st.button("Login"):
-        if password == FRONTEND_PASSWORD:
-            st.session_state.authenticated = True
-            st.rerun()
-        else:
-            st.error("Incorrect password.")
-    st.stop()
 
 # ---------------------------------------------------------------------------
 # Session state initialization
@@ -87,13 +67,10 @@ def invoke_agent(user_message: str) -> tuple[str, list[dict]]:
     trace_events = []
 
     for event in response.get("completion", []):
-        # Collect response chunks
         if "chunk" in event:
             chunk = event["chunk"]
             if "bytes" in chunk:
                 response_text += chunk["bytes"].decode("utf-8")
-
-        # Collect trace data
         if "trace" in event:
             trace_events.append(event["trace"])
 
@@ -107,10 +84,8 @@ def format_trace(trace_events: list[dict]) -> list[dict]:
     for trace_event in trace_events:
         trace = trace_event.get("trace", {})
 
-        # Orchestration trace — the main reasoning loop
         orch = trace.get("orchestrationTrace", {})
         if orch:
-            # Model invocation input (the prompt sent to the LLM)
             if "modelInvocationInput" in orch:
                 mii = orch["modelInvocationInput"]
                 steps.append({
@@ -119,7 +94,6 @@ def format_trace(trace_events: list[dict]) -> list[dict]:
                     "traceId": mii.get("traceId", ""),
                 })
 
-            # Rationale — the agent's reasoning
             if "rationale" in orch:
                 steps.append({
                     "type": "Reasoning",
@@ -127,7 +101,6 @@ def format_trace(trace_events: list[dict]) -> list[dict]:
                     "traceId": orch["rationale"].get("traceId", ""),
                 })
 
-            # Invocation input — tool call about to be made
             if "invocationInput" in orch:
                 inv = orch["invocationInput"]
                 if "actionGroupInvocationInput" in inv:
@@ -151,7 +124,6 @@ def format_trace(trace_events: list[dict]) -> list[dict]:
                         "traceId": inv.get("traceId", ""),
                     })
 
-            # Observation — result from tool call or KB retrieval
             if "observation" in orch:
                 obs = orch["observation"]
                 if "actionGroupInvocationOutput" in obs:
@@ -180,7 +152,6 @@ def format_trace(trace_events: list[dict]) -> list[dict]:
                         "traceId": obs.get("traceId", ""),
                     })
 
-        # Guardrail trace
         gt = trace.get("guardrailTrace", {})
         if gt:
             action = gt.get("action", "")
@@ -199,41 +170,41 @@ def render_trace(steps: list[dict]):
         step_type = step.get("type", "Unknown")
 
         if step_type == "Reasoning":
-            st.markdown(f"**💭 Reasoning**")
+            st.markdown("**Reasoning**")
             st.text(step.get("text", ""))
 
         elif step_type == "Tool Call":
-            st.markdown(f"**🔧 Tool Call: `{step.get('tool', '')}`**")
+            st.markdown(f"**Tool Call: `{step.get('tool', '')}`**")
             st.json(step.get("parameters", {}))
 
         elif step_type == "Tool Response":
-            st.markdown(f"**📋 Tool Response**")
+            st.markdown("**Tool Response**")
             try:
                 st.json(json.loads(step.get("text", "{}")))
             except (json.JSONDecodeError, TypeError):
                 st.text(step.get("text", ""))
 
         elif step_type == "KB Lookup":
-            st.markdown(f"**📚 Knowledge Base Query**")
+            st.markdown("**Knowledge Base Query**")
             st.text(step.get("query", ""))
 
         elif step_type == "KB Results":
-            st.markdown(f"**📄 KB Results** ({len(step.get('references', []))} documents)")
+            st.markdown(f"**KB Results** ({len(step.get('references', []))} documents)")
             for ref in step.get("references", []):
                 st.caption(ref.get("source", ""))
                 st.text(ref.get("text", "")[:200])
 
         elif step_type == "Guardrail":
             action = step.get("action", "")
-            icon = "🚫" if action == "BLOCKED" else "✅"
-            st.markdown(f"**{icon} Guardrail: {action}**")
+            label = "BLOCKED" if action == "BLOCKED" else action
+            st.markdown(f"**Guardrail: {label}**")
 
         elif step_type == "Model Input":
             with st.expander("Model Input (truncated)", expanded=False):
                 st.text(step.get("text", ""))
 
         elif step_type == "Final Response":
-            st.markdown(f"**✅ Final Response**")
+            st.markdown("**Final Response**")
             st.text(step.get("text", "")[:200])
 
         if i < len(steps) - 1:
@@ -241,78 +212,17 @@ def render_trace(steps: list[dict]):
 
 
 # ---------------------------------------------------------------------------
-# Main UI
+# Sidebar -- trace panel and session info
 # ---------------------------------------------------------------------------
 
-# Header
-col1, col2 = st.columns([3, 1])
-with col1:
-    st.title("NovaCrest Support Agent")
-with col2:
-    if st.button("New Conversation"):
-        st.session_state.session_id = str(uuid.uuid4())
-        st.session_state.messages = []
-        st.session_state.traces = []
-        st.rerun()
-
-# Check config
-if not AGENT_ID or not AGENT_ALIAS_ID:
-    st.error("AGENT_ID and AGENT_ALIAS_ID environment variables must be set.")
-    st.stop()
-
-# Layout: chat on left, trace on right
-chat_col, trace_col = st.columns([2, 1])
-
-with chat_col:
-    # Display message history
-    for msg in st.session_state.messages:
-        with st.chat_message(msg["role"]):
-            st.markdown(msg["content"])
-
-    # Chat input
-    if prompt := st.chat_input("Ask NovaCrest Support..."):
-        # Add user message
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"):
-            st.markdown(prompt)
-
-        # Invoke agent
-        with st.chat_message("assistant"):
-            with st.spinner("Thinking..."):
-                try:
-                    response_text, trace_events = invoke_agent(prompt)
-                    st.markdown(response_text)
-
-                    # Store for display
-                    st.session_state.messages.append(
-                        {"role": "assistant", "content": response_text}
-                    )
-                    parsed_trace = format_trace(trace_events)
-                    st.session_state.traces.append({
-                        "query": prompt,
-                        "steps": parsed_trace,
-                        "raw": trace_events,
-                    })
-                except Exception as e:
-                    error_msg = f"Error invoking agent: {str(e)}"
-                    st.error(error_msg)
-                    st.session_state.messages.append(
-                        {"role": "assistant", "content": error_msg}
-                    )
-
-with trace_col:
+with st.sidebar:
     st.subheader("Agent Trace")
     if st.session_state.traces:
-        # Show most recent trace
         latest = st.session_state.traces[-1]
         st.caption(f"Query: {latest['query']}")
         render_trace(latest["steps"])
-
-        # Raw JSON viewer
         with st.expander("Raw Trace JSON", expanded=False):
             st.json(latest["raw"])
-
-        # Previous traces
         if len(st.session_state.traces) > 1:
             with st.expander(f"Previous Traces ({len(st.session_state.traces) - 1})", expanded=False):
                 for i, t in enumerate(reversed(st.session_state.traces[:-1])):
@@ -322,8 +232,58 @@ with trace_col:
     else:
         st.caption("Send a message to see the agent's reasoning trace here.")
 
-# Footer
-st.sidebar.markdown("---")
-st.sidebar.caption(f"Session: `{st.session_state.session_id[:8]}...`")
-st.sidebar.caption(f"Agent: `{AGENT_ID}`")
-st.sidebar.caption(f"Region: `{AWS_REGION}`")
+    st.markdown("---")
+    st.caption(f"Session: `{st.session_state.session_id[:8]}...`")
+    st.caption(f"Agent: `{AGENT_ID}`")
+    st.caption(f"Region: `{AWS_REGION}`")
+
+    if st.button("New Conversation"):
+        st.session_state.session_id = str(uuid.uuid4())
+        st.session_state.messages = []
+        st.session_state.traces = []
+        st.rerun()
+
+# ---------------------------------------------------------------------------
+# Main UI -- chat area
+# ---------------------------------------------------------------------------
+
+st.title("NovaCrest Support Agent")
+
+if not AGENT_ID or not AGENT_ALIAS_ID:
+    st.error("AGENT_ID and AGENT_ALIAS_ID environment variables must be set.")
+    st.stop()
+
+# 1. Render all historical messages
+for msg in st.session_state.messages:
+    with st.chat_message(msg["role"]):
+        st.markdown(msg["content"])
+
+# 2. Chat input at root level -- Streamlit pins this to the bottom via CSS
+if prompt := st.chat_input("Ask NovaCrest Support..."):
+    # Show user message immediately in this render cycle
+    with st.chat_message("user"):
+        st.markdown(prompt)
+    st.session_state.messages.append({"role": "user", "content": prompt})
+
+    # Show assistant response in this render cycle
+    with st.chat_message("assistant"):
+        with st.spinner("Thinking..."):
+            try:
+                response_text, trace_events = invoke_agent(prompt)
+                st.markdown(response_text)
+
+                st.session_state.messages.append(
+                    {"role": "assistant", "content": response_text}
+                )
+                parsed_trace = format_trace(trace_events)
+                st.session_state.traces.append({
+                    "query": prompt,
+                    "steps": parsed_trace,
+                    "raw": trace_events,
+                })
+            except Exception as e:
+                error_msg = f"Error invoking agent: {str(e)}"
+                st.error(error_msg)
+                st.session_state.messages.append(
+                    {"role": "assistant", "content": error_msg}
+                )

@@ -24,23 +24,79 @@ train your team on the risks of deploying AI agents without proper guardrails.
 
 ## Status
 
-**Work in Progress** — This project is currently under active development. Check back for updates.
+**Phase 1 (Secure Baseline) — Complete**
+
+| Step | Module | Status |
+|------|--------|--------|
+| 0 | Repo scaffold & tooling | Done |
+| 1 | Baseline (CloudTrail, billing, S3 block) | Done |
+| 2 | Networking (VPC, subnets, SGs) | Done |
+| 3 | Data (S3, DynamoDB, fake customers) | Done |
+| 4 | Agent Tools (Lambda + OpenAPI spec) | Done |
+| 5 | Knowledge Base (OpenSearch Serverless + Bedrock KB) | Done |
+| 6 | Agent (Bedrock Agent + system prompt) | Done |
+| 7 | Guardrails (content filters, PII redaction, prompt attack detection) | Done |
+| 8 | Frontend (Streamlit chat UI on EC2) | Done |
+| 9 | Observability (CloudWatch) | Planned |
+
+**Phase 2** (Attack Scenarios), **Phase 3** (Exploitation), **Phase 4** (Remediation) — Not started.
 
 ## Quick Start
 
-_Coming soon._
+### Prerequisites
+
+- AWS CLI v2, Terraform v1.5+, Python 3.11+
+- A dedicated AWS account with Bedrock model access enabled (see [docs/SETUP.md](docs/SETUP.md))
+
+### Deploy
+
+```bash
+git clone git@github.com:keirendev/agent-inject.git
+cd agent-inject/terraform
+
+terraform init
+terraform apply \
+  -var-file=scenarios/secure-baseline.tfvars \
+  -var="operator_ip=$(curl -s https://checkip.amazonaws.com)" \
+  -var="alert_email=your@email.com"
+```
+
+After apply completes, the `frontend_url` output gives you the Streamlit chat UI. Wait 2-3 minutes for the EC2 setup script to finish.
+
+### Tear Down
+
+```bash
+cd terraform
+terraform destroy \
+  -var-file=scenarios/secure-baseline.tfvars \
+  -var="operator_ip=$(curl -s https://checkip.amazonaws.com)" \
+  -var="alert_email=your@email.com"
+```
 
 ## Architecture
 
-_Coming soon — see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)._
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full diagram and component breakdown.
+
+```
+Operator → Frontend (Streamlit/EC2) → Bedrock Agent → Lambda Tools + Knowledge Base
+                                          ↓
+                                     Guardrails (content filters, PII redaction)
+```
+
+**9 Terraform modules**: baseline, networking, data, agent-tools, knowledge-base, agent, guardrails, frontend, observability.
 
 ## Attack Scenarios
 
-_Coming soon — see [docs/ATTACK_SCENARIOS.md](docs/ATTACK_SCENARIOS.md)._
+_Coming soon_ — Scenario `.tfvars` files will toggle deliberate misconfigurations:
 
-## Teardown
+- **RAG Poisoning**: Inject malicious instructions into knowledge base documents
+- **Weak System Prompt**: Remove security boundaries from the agent's instructions
+- **Overpermissive IAM**: Give the agent excessive tool access
+- **Guardrail Bypass**: Lower or disable content filtering
 
-_Coming soon — run `./scripts/teardown.sh` to destroy all resources._
+## Cost
+
+Primary cost driver: **OpenSearch Serverless** (~$11.52/day for 2 OCU minimum). See [COST_ESTIMATE.md](COST_ESTIMATE.md). Always destroy when not actively testing.
 
 ## References
 
