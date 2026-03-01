@@ -95,13 +95,13 @@ resource "aws_instance" "frontend" {
   iam_instance_profile        = aws_iam_instance_profile.frontend.name
   associate_public_ip_address = true
 
-  user_data = base64encode(templatefile("${path.module}/user_data.sh", {
+  user_data = templatefile("${path.module}/user_data.sh", {
     aws_region        = var.aws_region
     agent_id          = var.agent_id
     agent_alias_id    = var.agent_alias_id
     frontend_password = var.frontend_password
     app_py            = file("${path.module}/../../../src/frontend/app.py")
-  }))
+  })
 
   tags = {
     Name = local.frontend_name
