@@ -52,7 +52,10 @@ resource "aws_iam_role_policy" "frontend_permissions" {
         Action = [
           "bedrock:InvokeAgent",
         ]
-        Resource = "arn:aws:bedrock:${var.aws_region}:${data.aws_caller_identity.current.account_id}:agent-alias/${var.agent_id}/*"
+        Resource = [
+          "arn:aws:bedrock:${var.aws_region}:${data.aws_caller_identity.current.account_id}:agent/${var.agent_id}",
+          "arn:aws:bedrock:${var.aws_region}:${data.aws_caller_identity.current.account_id}:agent-alias/${var.agent_id}/*",
+        ]
       },
     ]
   })
@@ -95,13 +98,14 @@ resource "aws_instance" "frontend" {
   iam_instance_profile        = aws_iam_instance_profile.frontend.name
   associate_public_ip_address = true
 
-  user_data = templatefile("${path.module}/user_data.sh", {
+  user_data                   = templatefile("${path.module}/user_data.sh", {
     aws_region        = var.aws_region
     agent_id          = var.agent_id
     agent_alias_id    = var.agent_alias_id
     frontend_password = var.frontend_password
     app_py            = file("${path.module}/../../../src/frontend/app.py")
   })
+  user_data_replace_on_change = true
 
   tags = {
     Name = local.frontend_name
