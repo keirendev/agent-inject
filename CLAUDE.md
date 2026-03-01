@@ -60,6 +60,7 @@ terraform destroy
 Use Git and GitHub as a developer would. The repo is the source of truth for project state, outstanding work, and session continuity.
 
 ## Commit Behaviour
+- **Pre-commit secret scan**: This repo is public. Before every commit and push, run `gitleaks detect` or `trufflehog filesystem .` to ensure no secrets, credentials, or sensitive information are included. Do not push if any findings are reported.
 - Commit after every meaningful unit of work (don't batch unrelated changes)
 - Use conventional commit format: `type(scope): description`
   - Types: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`
