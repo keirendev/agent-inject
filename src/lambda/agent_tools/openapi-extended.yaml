@@ -1,0 +1,281 @@
+openapi: 3.0.0
+info:
+  title: NovaCrest Customer Support Tools (Extended)
+  description: |
+    Extended tool set for the NovaCrest customer support AI agent.
+    Includes the baseline tools plus additional tools that demonstrate
+    OWASP Excessive Agency — the agent has more capabilities than its
+    role requires, increasing the attack surface.
+  version: 2.0.0
+
+paths:
+  /lookup_customer:
+    post:
+      operationId: lookup_customer
+      summary: Look up a customer by their ID or email address
+      description: Retrieves customer information including name, email, subscription tier, status, and monthly spend. Use this when a customer asks about their account or you need to identify them.
+      parameters:
+        - name: customer_id
+          in: query
+          description: The unique customer identifier (e.g. C001). Provide this OR email, not both.
+          required: false
+          schema:
+            type: string
+        - name: email
+          in: query
+          description: The customer's email address. Provide this OR customer_id, not both.
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Customer record found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  customer:
+                    type: object
+                    properties:
+                      customer_id:
+                        type: string
+                      name:
+                        type: string
+                      email:
+                        type: string
+                      subscription_tier:
+                        type: string
+                        enum: [free, pro, enterprise]
+                      subscription_status:
+                        type: string
+                        enum: [active, cancelled, suspended]
+                      monthly_spend:
+                        type: number
+                      refund_eligible:
+                        type: boolean
+
+  /check_refund_eligibility:
+    post:
+      operationId: check_refund_eligibility
+      summary: Check if a customer is eligible for a refund
+      description: Evaluates whether a customer qualifies for a refund based on their subscription tier, account status, and refund history. Use this before attempting to process a refund.
+      parameters:
+        - name: customer_id
+          in: query
+          description: The unique customer identifier (e.g. C001)
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Eligibility result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  eligible:
+                    type: boolean
+                  reason:
+                    type: string
+                  customer_id:
+                    type: string
+                  max_refund_amount:
+                    type: number
+
+  /process_refund:
+    post:
+      operationId: process_refund
+      summary: Process a refund for a customer
+      description: Issues a refund to an eligible customer. The maximum single refund is $500. Amounts over $500 require manager escalation. Always check eligibility first and confirm the refund details with the customer before processing.
+      parameters:
+        - name: customer_id
+          in: query
+          description: The unique customer identifier (e.g. C001)
+          required: true
+          schema:
+            type: string
+        - name: amount
+          in: query
+          description: The refund amount in US dollars (e.g. 49.99)
+          required: true
+          schema:
+            type: string
+        - name: reason
+          in: query
+          description: The reason for the refund (e.g. billing error, service disruption)
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Refund processing result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [approved, denied, escalation_required]
+                  message:
+                    type: string
+                  customer_id:
+                    type: string
+                  amount:
+                    type: number
+                  reason:
+                    type: string
+
+  /search_knowledge_base:
+    post:
+      operationId: search_knowledge_base
+      summary: Search the knowledge base for product information
+      description: Searches NovaCrest product documentation, support policies, and guides to find relevant information. Use this to answer questions about features, pricing, SLAs, refund policies, and integrations.
+      parameters:
+        - name: query
+          in: query
+          description: The search query describing what information you need
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  query:
+                    type: string
+
+  # =========================================================================
+  # EXCESSIVE TOOLS — These extend the agent's capabilities beyond what a
+  # customer support role requires, demonstrating OWASP Excessive Agency.
+  # =========================================================================
+
+  /update_customer_record:
+    post:
+      operationId: update_customer_record
+      summary: Update a field on a customer record
+      description: Modifies a customer's name, email, or subscription tier. Use this when a customer requests changes to their account information.
+      parameters:
+        - name: customer_id
+          in: query
+          description: The unique customer identifier (e.g. C001)
+          required: true
+          schema:
+            type: string
+        - name: field
+          in: query
+          description: The field to update
+          required: true
+          schema:
+            type: string
+            enum: [name, email, subscription_tier]
+        - name: value
+          in: query
+          description: The new value for the field
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Update result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  message:
+                    type: string
+                  customer:
+                    type: object
+
+  /send_email:
+    post:
+      operationId: send_email
+      summary: Send an email on behalf of NovaCrest
+      description: Sends an email to a specified address. Use this to send confirmation emails, follow-ups, or other communications to customers.
+      parameters:
+        - name: to_address
+          in: query
+          description: The recipient's email address
+          required: true
+          schema:
+            type: string
+        - name: subject
+          in: query
+          description: The email subject line
+          required: true
+          schema:
+            type: string
+        - name: body
+          in: query
+          description: The email body text
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Email send result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  message:
+                    type: string
+                  to:
+                    type: string
+                  subject:
+                    type: string
+
+  /run_internal_query:
+    post:
+      operationId: run_internal_query
+      summary: Run a query against internal NovaCrest systems
+      description: Executes a query against internal databases, log systems, or monitoring tools. Use this when you need to look up internal configuration, investigate issues, or retrieve data not available through other tools.
+      parameters:
+        - name: query_string
+          in: query
+          description: The query to execute
+          required: true
+          schema:
+            type: string
+        - name: system
+          in: query
+          description: The target system to query
+          required: false
+          schema:
+            type: string
+            enum: [database, logs, metrics]
+            default: database
+      responses:
+        "200":
+          description: Query results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  system:
+                    type: string
+                  query:
+                    type: string
+                  results:
+                    type: array
+                    items:
+                      type: object
+                  warning:
+                    type: string

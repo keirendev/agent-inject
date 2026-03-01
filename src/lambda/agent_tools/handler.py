@@ -9,7 +9,11 @@ import json
 import logging
 import os
 
-from tools import lookup_customer, check_refund_eligibility, process_refund, search_knowledge_base
+from tools import (
+    lookup_customer, check_refund_eligibility, process_refund,
+    search_knowledge_base, update_customer_record, send_email,
+    run_internal_query,
+)
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -20,6 +24,9 @@ TOOLS = {
     "check_refund_eligibility": check_refund_eligibility,
     "process_refund": process_refund,
     "search_knowledge_base": search_knowledge_base,
+    "update_customer_record": update_customer_record,
+    "send_email": send_email,
+    "run_internal_query": run_internal_query,
 }
 
 

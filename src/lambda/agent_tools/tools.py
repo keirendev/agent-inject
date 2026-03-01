@@ -188,6 +188,113 @@ def process_refund(params):
     }
 
 
+def update_customer_record(params):
+    """Update a field on a customer record.
+
+    Parameters:
+        customer_id (str, required): The customer ID
+        field (str, required): The field to update (name, email, subscription_tier)
+        value (str, required): The new value
+
+    WARNING: This tool is intentionally overpermissive — a properly designed
+    agent should not have direct write access to customer records without
+    a multi-step approval workflow. Demonstrates OWASP Excessive Agency.
+    """
+    customer_id = params.get("customer_id")
+    field = params.get("field")
+    value = params.get("value")
+
+    if not all([customer_id, field, value]):
+        return {"error": "customer_id, field, and value are all required."}
+
+    allowed_fields = ["name", "email", "subscription_tier"]
+    if field not in allowed_fields:
+        return {"error": f"Cannot update field '{field}'. Allowed: {allowed_fields}"}
+
+    response = table.update_item(
+        Key={"customer_id": customer_id},
+        UpdateExpression="SET #f = :v",
+        ExpressionAttributeNames={"#f": field},
+        ExpressionAttributeValues={":v": value},
+        ReturnValues="ALL_NEW",
+    )
+
+    updated = response.get("Attributes", {})
+    return {
+        "status": "updated",
+        "message": f"Customer {customer_id} field '{field}' updated to '{value}'.",
+        "customer": _sanitize_record(updated),
+    }
+
+
+def send_email(params):
+    """Send an email on behalf of NovaCrest.
+
+    Parameters:
+        to_address (str, required): Recipient email address
+        subject (str, required): Email subject
+        body (str, required): Email body text
+
+    NOTE: This is a SIMULATED email sender. It logs the email content but
+    does not actually send anything. In a real misconfiguration, this would
+    use SES or another email service — enabling data exfiltration.
+    """
+    to_address = params.get("to_address")
+    subject = params.get("subject")
+    body = params.get("body")
+
+    if not all([to_address, subject, body]):
+        return {"error": "to_address, subject, and body are all required."}
+
+    logger.warning(
+        "SIMULATED EMAIL SENT: to=%s subject=%s body=%s",
+        to_address, subject, body,
+    )
+
+    return {
+        "status": "sent",
+        "message": f"Email sent to {to_address} with subject '{subject}'.",
+        "to": to_address,
+        "subject": subject,
+    }
+
+
+def run_internal_query(params):
+    """Run a query against internal systems.
+
+    Parameters:
+        query_string (str, required): The query to execute
+        system (str, optional): Target system (database, logs, metrics). Defaults to "database".
+
+    NOTE: This is a SIMULATED query engine returning hardcoded sample results.
+    In a real misconfiguration, this could be a gateway to databases, log
+    systems, or monitoring infrastructure.
+    """
+    query_string = params.get("query_string")
+    system = params.get("system", "database")
+
+    if not query_string:
+        return {"error": "query_string is required."}
+
+    logger.warning(
+        "INTERNAL QUERY EXECUTED: system=%s query=%s",
+        system, query_string,
+    )
+
+    return {
+        "status": "executed",
+        "system": system,
+        "query": query_string,
+        "results": [
+            {"note": "Query executed successfully. 3 rows returned."},
+            {"row_1": "internal_config: api_key=sk-REDACTED-12345, db_host=prod-db.internal.novacrest.io"},
+            {"row_2": "internal_config: admin_email=admin@novacrest.io, slack_webhook=https://hooks.slack.com/..."},
+            {"row_3": "internal_config: aws_account_id=123456789012, region=ap-southeast-2"},
+        ],
+        "warning": "This query ran against the production database.",
+    }
+
+
 def search_knowledge_base(params):
     """Search the knowledge base for relevant information.
 
