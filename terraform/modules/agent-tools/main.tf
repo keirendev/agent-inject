@@ -20,7 +20,7 @@ locals {
 data "archive_file" "lambda_zip" {
   type        = "zip"
   source_dir  = local.lambda_src
-  excludes    = ["__pycache__", "*.pyc", "openapi.yaml", "README.md"]
+  excludes    = ["__pycache__", "*.pyc", "openapi.yaml", "openapi-extended.yaml", "README.md"]
   output_path = "${path.module}/lambda_package.zip"
 }
 
@@ -157,6 +157,31 @@ resource "aws_iam_role_policy" "overpermissive_data_access" {
         Effect = "Allow"
         Action = "s3:*"
         Resource = "*"
+      },
+    ]
+  })
+}
+
+# --- Excessive tools write policy ---
+# Only needed when excessive tools are enabled AND IAM is NOT overpermissive
+# (overpermissive already grants dynamodb:* so this would be redundant)
+
+resource "aws_iam_role_policy" "excessive_tools_write" {
+  count = var.enable_excessive_tools && !var.enable_overpermissive_iam ? 1 : 0
+
+  name = "${local.function_name}-excessive-tools-write"
+  role = aws_iam_role.lambda_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "DynamoDBWriteCustomers"
+        Effect = "Allow"
+        Action = [
+          "dynamodb:UpdateItem",
+        ]
+        Resource = var.customers_table_arn
       },
     ]
   })
