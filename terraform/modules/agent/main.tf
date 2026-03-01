@@ -108,6 +108,11 @@ resource "aws_bedrockagent_agent" "support_agent" {
   idle_session_ttl_in_seconds = 900
   prepare_agent               = false # Prepare explicitly after action group + KB
 
+  guardrail_configuration {
+    guardrail_identifier = var.guardrail_id
+    guardrail_version    = var.guardrail_version
+  }
+
   tags = {
     Name = local.agent_name
   }

@@ -38,6 +38,16 @@ variable "knowledge_base_id" {
   type        = string
 }
 
+variable "guardrail_id" {
+  description = "ID of the Bedrock Guardrail to associate with the agent"
+  type        = string
+}
+
+variable "guardrail_version" {
+  description = "Published version number of the guardrail"
+  type        = string
+}
+
 variable "use_weak_system_prompt" {
   description = "When true, uses the vague system prompt that lacks security boundaries"
   type        = bool

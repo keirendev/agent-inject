@@ -68,6 +68,15 @@ module "knowledge_base" {
   kb_include_internal_docs = var.kb_include_internal_docs
 }
 
+# --- Bedrock Guardrails (content filtering, PII redaction, prompt attack detection) ---
+module "guardrails" {
+  source = "./modules/guardrails"
+
+  project_name          = var.project_name
+  environment           = var.environment
+  guardrail_sensitivity = var.guardrail_sensitivity
+}
+
 # --- Bedrock Agent (orchestrator + system prompt) ---
 module "agent" {
   source = "./modules/agent"
@@ -78,17 +87,12 @@ module "agent" {
   lambda_arn                 = module.agent_tools.lambda_arn
   lambda_function_name       = module.agent_tools.lambda_function_name
   knowledge_base_id          = module.knowledge_base.knowledge_base_id
+  guardrail_id               = module.guardrails.guardrail_id
+  guardrail_version          = module.guardrails.guardrail_version
   use_weak_system_prompt     = var.use_weak_system_prompt
   enable_refund_confirmation = var.enable_refund_confirmation
   enable_excessive_tools     = var.enable_excessive_tools
 }
-
-# --- Future modules (uncomment as built) ---
-#
-# module "guardrails" {
-#   source = "./modules/guardrails"
-#   ...
-# }
 #
 # module "frontend" {
 #   source = "./modules/frontend"
