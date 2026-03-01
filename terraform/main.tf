@@ -56,14 +56,19 @@ module "agent_tools" {
   enable_overpermissive_iam = var.enable_overpermissive_iam
 }
 
+# --- OpenSearch Serverless + Bedrock Knowledge Base ---
+module "knowledge_base" {
+  source = "./modules/knowledge-base"
+
+  project_name             = var.project_name
+  environment              = var.environment
+  aws_region               = var.aws_region
+  kb_bucket_name           = module.data.kb_bucket_name
+  kb_bucket_arn            = module.data.kb_bucket_arn
+  kb_include_internal_docs = var.kb_include_internal_docs
+}
+
 # --- Future modules (uncomment as built) ---
-#
-# module "agent_tools" block is above (already built)
-#
-# module "knowledge_base" {
-#   source = "./modules/knowledge-base"
-#   ...
-# }
 #
 # module "agent" {
 #   source = "./modules/agent"

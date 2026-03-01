@@ -70,3 +70,15 @@ output "agent_tools_role_arn" {
   description = "ARN of the Lambda execution role"
   value       = module.agent_tools.lambda_role_arn
 }
+
+# --- Knowledge Base ---
+
+output "knowledge_base_id" {
+  description = "Bedrock Knowledge Base ID"
+  value       = module.knowledge_base.knowledge_base_id
+}
+
+output "opensearch_collection_endpoint" {
+  description = "OpenSearch Serverless collection endpoint"
+  value       = module.knowledge_base.opensearch_collection_endpoint
+}
