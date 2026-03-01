@@ -34,11 +34,15 @@ module "networking" {
   availability_zones = local.availability_zones
 }
 
+# --- S3 bucket for KB docs, DynamoDB for customer records ---
+module "data" {
+  source = "./modules/data"
+
+  project_name = var.project_name
+  environment  = var.environment
+}
+
 # --- Future modules (uncomment as built) ---
-# module "data" {
-#   source = "./modules/data"
-#   ...
-# }
 #
 # module "agent_tools" {
 #   source = "./modules/agent-tools"
