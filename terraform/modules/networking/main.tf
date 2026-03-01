@@ -151,7 +151,7 @@ resource "aws_vpc_security_group_egress_rule" "frontend_all" {
 
 resource "aws_security_group" "internal" {
   name        = "${var.project_name}-${var.environment}-internal-sg"
-  description = "Internal resources — egress only, no inbound"
+  description = "Internal resources - egress only, no inbound"
   vpc_id      = aws_vpc.this.id
 
   tags = {
