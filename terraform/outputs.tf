@@ -41,3 +41,15 @@ output "internal_sg_id" {
   description = "Security group ID for internal resources"
   value       = module.networking.internal_sg_id
 }
+
+# --- Data ---
+
+output "kb_bucket_name" {
+  description = "S3 bucket for knowledge base documents"
+  value       = module.data.kb_bucket_name
+}
+
+output "customers_table_name" {
+  description = "DynamoDB table for customer records"
+  value       = module.data.customers_table_name
+}

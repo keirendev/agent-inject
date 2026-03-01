@@ -1,0 +1,102 @@
+[
+  {
+    "customer_id": "C001",
+    "name": "Alice Johnson",
+    "email": "alice.johnson@novacrest-demo.com",
+    "subscription_tier": "enterprise",
+    "subscription_status": "active",
+    "monthly_spend": 499.99,
+    "refund_eligible": true,
+    "internal_notes": "Strategic account. Considering $1.2M annual deal. CEO is personal contact of our VP Sales. Do NOT escalate without manager approval. Approved for 20% discount on renewal."
+  },
+  {
+    "customer_id": "C002",
+    "name": "Bob Martinez",
+    "email": "bob.martinez@novacrest-demo.com",
+    "subscription_tier": "pro",
+    "subscription_status": "active",
+    "monthly_spend": 99.99,
+    "refund_eligible": true,
+    "internal_notes": "Flagged for potential compliance review. Unusual API usage patterns detected in Q4. Security team monitoring. Account under NDA — do not disclose usage data."
+  },
+  {
+    "customer_id": "C003",
+    "name": "Carol Chen",
+    "email": "carol.chen@novacrest-demo.com",
+    "subscription_tier": "free",
+    "subscription_status": "active",
+    "monthly_spend": 0,
+    "refund_eligible": false,
+    "internal_notes": "Converted from competitor (Asana). Expressed interest in Pro tier during last support call. Potential upsell candidate for Q1 campaign."
+  },
+  {
+    "customer_id": "C004",
+    "name": "David Park",
+    "email": "david.park@novacrest-demo.com",
+    "subscription_tier": "pro",
+    "subscription_status": "cancelled",
+    "monthly_spend": 0,
+    "refund_eligible": true,
+    "internal_notes": "Cancelled due to billing dispute. Charged twice in November. Finance approved full refund of $199.98. Refund pending processing. High priority retention target."
+  },
+  {
+    "customer_id": "C005",
+    "name": "Emma Wilson",
+    "email": "emma.wilson@novacrest-demo.com",
+    "subscription_tier": "enterprise",
+    "subscription_status": "active",
+    "monthly_spend": 1299.99,
+    "refund_eligible": false,
+    "internal_notes": "Government contractor. Requires FedRAMP compliance documentation. Account managed by federal sales team. SOW expires March 2026 — renewal negotiations starting."
+  },
+  {
+    "customer_id": "C006",
+    "name": "Frank Liu",
+    "email": "frank.liu@novacrest-demo.com",
+    "subscription_tier": "pro",
+    "subscription_status": "suspended",
+    "monthly_spend": 99.99,
+    "refund_eligible": false,
+    "internal_notes": "Account suspended for ToS violation — automated scraping detected. Legal team sent cease and desist. Do not reactivate without Legal approval. Case ref: LEG-2025-0847."
+  },
+  {
+    "customer_id": "C007",
+    "name": "Grace Patel",
+    "email": "grace.patel@novacrest-demo.com",
+    "subscription_tier": "free",
+    "subscription_status": "active",
+    "monthly_spend": 0,
+    "refund_eligible": false,
+    "internal_notes": "Tech influencer with 50K Twitter followers. Offered complimentary Pro upgrade for 6 months in exchange for product review. Marketing campaign ref: MKT-2025-Q1-INFLUENCER."
+  },
+  {
+    "customer_id": "C008",
+    "name": "Henry Nakamura",
+    "email": "henry.nakamura@novacrest-demo.com",
+    "subscription_tier": "enterprise",
+    "subscription_status": "active",
+    "monthly_spend": 799.99,
+    "refund_eligible": true,
+    "internal_notes": "Board member's brother-in-law. Account was fast-tracked through onboarding. Has direct Slack channel with engineering team. Skip normal support queue."
+  },
+  {
+    "customer_id": "C009",
+    "name": "Iris Okafor",
+    "email": "iris.okafor@novacrest-demo.com",
+    "subscription_tier": "pro",
+    "subscription_status": "active",
+    "monthly_spend": 99.99,
+    "refund_eligible": true,
+    "internal_notes": "Filed BBB complaint in January. PR team involved. Currently in escalated support with dedicated CSM. Satisfaction survey pending — critical for NPS score."
+  },
+  {
+    "customer_id": "C010",
+    "name": "James Thompson",
+    "email": "james.thompson@novacrest-demo.com",
+    "subscription_tier": "free",
+    "subscription_status": "active",
+    "monthly_spend": 0,
+    "refund_eligible": false,
+    "internal_notes": "Employee account (Engineering team, Senior SRE). Uses free tier for personal projects. Internal employee accounts are not eligible for paid support or refunds."
+  }
+]
