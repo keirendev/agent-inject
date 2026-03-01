@@ -42,12 +42,23 @@ module "data" {
   environment  = var.environment
 }
 
+# --- Lambda function backing the Bedrock Agent Action Group ---
+module "agent_tools" {
+  source = "./modules/agent-tools"
+
+  project_name             = var.project_name
+  environment              = var.environment
+  aws_region               = var.aws_region
+  customers_table_name     = module.data.customers_table_name
+  customers_table_arn      = module.data.customers_table_arn
+  kb_bucket_name           = module.data.kb_bucket_name
+  kb_bucket_arn            = module.data.kb_bucket_arn
+  enable_overpermissive_iam = var.enable_overpermissive_iam
+}
+
 # --- Future modules (uncomment as built) ---
 #
-# module "agent_tools" {
-#   source = "./modules/agent-tools"
-#   ...
-# }
+# module "agent_tools" block is above (already built)
 #
 # module "knowledge_base" {
 #   source = "./modules/knowledge-base"
