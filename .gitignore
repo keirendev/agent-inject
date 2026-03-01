@@ -1,0 +1,56 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfstate.*.backup
+.terraform.lock.hcl
+terraform.tfvars
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Environment / Secrets
+.env
+*.pem
+*.key
+*.crt
+*.pfx
+credentials.json
+**/secrets/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Lambda packaging
+src/lambda/agent_tools/package/
+*.zip
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Node (if frontend uses it)
+node_modules/
