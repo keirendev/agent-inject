@@ -54,6 +54,7 @@ module "agent_tools" {
   kb_bucket_name           = module.data.kb_bucket_name
   kb_bucket_arn            = module.data.kb_bucket_arn
   enable_overpermissive_iam = var.enable_overpermissive_iam
+  enable_excessive_tools   = var.enable_excessive_tools
 }
 
 # --- OpenSearch Serverless + Bedrock Knowledge Base ---

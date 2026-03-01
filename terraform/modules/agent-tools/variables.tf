@@ -38,3 +38,9 @@ variable "enable_overpermissive_iam" {
   type        = bool
   default     = false
 }
+
+variable "enable_excessive_tools" {
+  description = "When true, Lambda gets DynamoDB write access for update_customer_record tool"
+  type        = bool
+  default     = false
+}
