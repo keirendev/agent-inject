@@ -82,3 +82,15 @@ output "opensearch_collection_endpoint" {
   description = "OpenSearch Serverless collection endpoint"
   value       = module.knowledge_base.opensearch_collection_endpoint
 }
+
+# --- Agent ---
+
+output "agent_id" {
+  description = "Bedrock Agent ID"
+  value       = module.agent.agent_id
+}
+
+output "agent_alias_id" {
+  description = "Bedrock Agent Alias ID (use this to invoke the agent)"
+  value       = module.agent.agent_alias_id
+}
