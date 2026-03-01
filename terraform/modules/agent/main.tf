@@ -88,6 +88,17 @@ resource "aws_iam_role_policy" "agent_permissions" {
         ]
         Resource = "arn:aws:bedrock:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:guardrail/${var.guardrail_id}"
       },
+      {
+        Sid    = "PublishAgentMetrics"
+        Effect = "Allow"
+        Action = "cloudwatch:PutMetricData"
+        Resource = "*"
+        Condition = {
+          StringEquals = {
+            "cloudwatch:namespace" = "AWS/Bedrock/Agents"
+          }
+        }
+      },
     ]
   })
 }

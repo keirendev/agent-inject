@@ -107,9 +107,15 @@ module "frontend" {
   agent_alias_id    = module.agent.agent_alias_id
 }
 
-# --- Future modules (uncomment as built) ---
-#
-# module "observability" {
-#   source = "./modules/observability"
-#   ...
-# }
+# --- Observability (model invocation logging, CloudWatch dashboard) ---
+
+module "observability" {
+  source = "./modules/observability"
+
+  project_name         = var.project_name
+  environment          = var.environment
+  aws_region           = var.aws_region
+  agent_alias_arn      = module.agent.agent_alias_arn
+  guardrail_arn        = module.guardrails.guardrail_arn
+  lambda_function_name = module.agent_tools.lambda_function_name
+}

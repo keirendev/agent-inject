@@ -108,3 +108,20 @@ output "frontend_url" {
   description = "URL to access the frontend chat UI"
   value       = module.frontend.frontend_url
 }
+
+# --- Observability ---
+
+output "dashboard_url" {
+  description = "URL to the CloudWatch agent monitoring dashboard"
+  value       = module.observability.dashboard_url
+}
+
+output "invocation_log_group" {
+  description = "CloudWatch log group for Bedrock model invocation logs"
+  value       = module.observability.invocation_log_group_name
+}
+
+output "invocation_log_bucket" {
+  description = "S3 bucket storing Bedrock model invocation logs"
+  value       = module.observability.invocation_log_bucket_name
+}
