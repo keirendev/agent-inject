@@ -81,3 +81,13 @@ variable "enable_excessive_tools" {
   type        = bool
   default     = false
 }
+
+# -----------------------------------------------------------------------------
+# Model selection
+# -----------------------------------------------------------------------------
+
+variable "foundation_model" {
+  description = "Bedrock foundation model ID for the agent (e.g., amazon.nova-lite-v1:0, amazon.nova-micro-v1:0, amazon.nova-pro-v1:0)"
+  type        = string
+  default     = "amazon.nova-lite-v1:0"
+}

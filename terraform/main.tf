@@ -90,6 +90,7 @@ module "agent" {
   knowledge_base_id          = module.knowledge_base.knowledge_base_id
   guardrail_id               = module.guardrails.guardrail_id
   guardrail_version          = module.guardrails.guardrail_version
+  foundation_model           = var.foundation_model
   use_weak_system_prompt     = var.use_weak_system_prompt
   enable_refund_confirmation = var.enable_refund_confirmation
   enable_excessive_tools     = var.enable_excessive_tools

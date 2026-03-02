@@ -148,7 +148,11 @@ resource "aws_bedrockagent_agent" "support_agent" {
 resource "aws_bedrockagent_agent_action_group" "customer_tools" {
   agent_id          = aws_bedrockagent_agent.support_agent.agent_id
   agent_version     = "DRAFT"
-  action_group_name = "${var.project_name}-${var.environment}-customer-tools"
+  # Use underscores (not hyphens) in the action group name because Bedrock
+  # Agents embeds it in the tool names sent to the model (e.g.
+  # POST__<group>__<operation>). Amazon Nova models produce invalid tool-use
+  # sequences when tool names contain hyphens, causing ModelErrorException.
+  action_group_name = "${replace(var.project_name, "-", "_")}_${replace(var.environment, "-", "_")}_customer_tools"
 
   action_group_executor {
     lambda = var.lambda_arn
@@ -208,6 +212,7 @@ resource "null_resource" "prepare_agent" {
     action_group_id       = aws_bedrockagent_agent_action_group.customer_tools.action_group_id
     kb_association        = aws_bedrockagent_agent_knowledge_base_association.kb.knowledge_base_id
     enable_excessive_tools = var.enable_excessive_tools
+    foundation_model      = var.foundation_model
   }
 
   depends_on = [
