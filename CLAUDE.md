@@ -49,6 +49,7 @@ terraform destroy
 - **Scenario toggle pattern**: misconfigurations are controlled by boolean Terraform variables (e.g., `enable_overpermissive_iam`, `use_weak_system_prompt`). Each scenario `.tfvars` file sets specific combinations.
 - **System prompts** live in `prompts/` as separate `.txt` files (secure and weak variants).
 - **Cost awareness**: prefer Amazon Nova Lite/Micro for testing, Claude Sonnet only for final validation. OpenSearch Serverless is the biggest cost driver.
+- **Hard budget rule**: Total daily AWS cost must not exceed $15/day. OpenSearch Serverless ($5.76/day with standby replicas disabled) is the biggest driver. Always `terraform destroy` when not actively testing. Prefer Nova Micro/Lite over Claude Sonnet for routine testing.
 - **Security**: all ingress restricted to operator IP. IAM roles scoped to specific resources. S3 public access blocked at account level. CloudTrail enabled.
 - **Documentation**: keep `docs/` and the GitHub Wiki in sync. When implementing a feature or completing a step, update `docs/` files and the wiki Status page. The wiki lives at `git@github.com:keirendev/agent-inject.wiki.git`.
 
