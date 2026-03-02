@@ -39,7 +39,31 @@ def extract_parameters(event):
 
 
 def build_response(event, body):
-    """Build the response object Bedrock Agent expects."""
+    """Build the response object Bedrock Agent expects.
+
+    Supports both function-based and OpenAPI-based action groups:
+    - Function schema: event has "function" key → response uses "function"
+    - OpenAPI schema: event has "apiPath" key → response uses "apiPath" + "httpMethod"
+    """
+    body_str = json.dumps(body) if isinstance(body, dict) else str(body)
+
+    # Detect format from the event — OpenAPI sends apiPath, function schema sends function
+    if "apiPath" in event:
+        return {
+            "messageVersion": "1.0",
+            "response": {
+                "actionGroup": event.get("actionGroup", ""),
+                "apiPath": event.get("apiPath", ""),
+                "httpMethod": event.get("httpMethod", "POST"),
+                "httpStatusCode": 200,
+                "responseBody": {
+                    "application/json": {
+                        "body": body_str,
+                    }
+                },
+            },
+        }
+
     return {
         "messageVersion": "1.0",
         "response": {
@@ -48,7 +72,7 @@ def build_response(event, body):
             "functionResponse": {
                 "responseBody": {
                     "TEXT": {
-                        "body": json.dumps(body) if isinstance(body, dict) else str(body)
+                        "body": body_str,
                     }
                 }
             },
@@ -58,7 +82,11 @@ def build_response(event, body):
 
 def lambda_handler(event, context):
     """Main Lambda entry point for Bedrock Agent Action Group."""
+    # Support both function schema ("function" key) and OpenAPI schema ("apiPath" key)
     function_name = event.get("function", "")
+    if not function_name and "apiPath" in event:
+        # OpenAPI format: apiPath is like "/lookup_customer"
+        function_name = event.get("apiPath", "").lstrip("/")
     parameters = extract_parameters(event)
 
     logger.info(
