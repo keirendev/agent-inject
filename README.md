@@ -87,12 +87,59 @@ Operator → Frontend (Streamlit/EC2) → Bedrock Agent → Lambda Tools + Knowl
 
 ## Attack Scenarios
 
-_Coming soon_ — Scenario `.tfvars` files will toggle deliberate misconfigurations:
+Scenario `.tfvars` files toggle deliberate misconfigurations:
 
 - **RAG Poisoning**: Inject malicious instructions into knowledge base documents
 - **Weak System Prompt**: Remove security boundaries from the agent's instructions
 - **Overpermissive IAM**: Give the agent excessive tool access
 - **Guardrail Bypass**: Lower or disable content filtering
+- **Tool Manipulation**: Remove refund confirmation, enable parameter swapping
+- **Full Kill Chain**: All misconfigurations active — 9-step attack chain
+
+## Automated Test Harness
+
+A Python CLI test runner sends attack payloads to the deployed agent, captures full traces, validates outcomes against assertions, and generates markdown reports.
+
+### Quick Start
+
+```bash
+# Install test dependencies
+pip install -r tests/requirements.txt
+
+# Validate all test definitions (no agent needed)
+./scripts/run-tests.sh --all --dry-run
+
+# Run tests for a specific scenario (agent must be deployed)
+./scripts/run-tests.sh secure-baseline
+./scripts/run-tests.sh scenario-rag-poisoning --verbose
+
+# Run all scenarios
+./scripts/run-tests.sh --all
+
+# Review results
+cat tests/results/secure-baseline/*/summary.md
+```
+
+### Typical Workflow
+
+```bash
+# 1. Deploy a scenario
+./scripts/swap-scenario.sh scenario-rag-poisoning
+./scripts/sync-kb-poisoned.sh
+
+# 2. Run matching tests
+./scripts/run-tests.sh scenario-rag-poisoning
+
+# 3. Review results
+cat tests/results/scenario-rag-poisoning/*/summary.md
+
+# 4. Switch to secure baseline and verify attacks are blocked
+./scripts/swap-scenario.sh secure-baseline
+./scripts/sync-kb-clean.sh
+./scripts/run-tests.sh secure-baseline
+```
+
+Test definitions live in `tests/definitions/` as YAML files. Reports are generated in `tests/results/`.
 
 ## Cost
 

@@ -49,6 +49,9 @@ src/lambda/agent_tools/package/
 .DS_Store
 Thumbs.db
 
+# Test results (generated at runtime)
+tests/results/
+
 # Logs
 *.log
 
