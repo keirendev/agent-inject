@@ -74,7 +74,15 @@ resource "aws_iam_role_policy" "agent_permissions" {
           "bedrock:InvokeModel",
           "bedrock:InvokeModelWithResponseStream",
         ]
-        Resource = "arn:aws:bedrock:${data.aws_region.current.id}::foundation-model/${var.foundation_model}"
+        Resource = concat(
+          # Direct model access
+          ["arn:aws:bedrock:${data.aws_region.current.id}::foundation-model/${var.foundation_model}"],
+          # Cross-region inference profile access (APAC/global profiles route to multiple regions)
+          startswith(var.foundation_model, "apac.") || startswith(var.foundation_model, "global.") ? [
+            "arn:aws:bedrock:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:inference-profile/${var.foundation_model}",
+            "arn:aws:bedrock:*::foundation-model/*",
+          ] : []
+        )
       },
       {
         Sid    = "RetrieveFromKnowledgeBase"
