@@ -6,11 +6,16 @@ automated test harness. Supports single-turn and multi-turn conversations.
 """
 
 import json
+import logging
 import os
 import subprocess
 import time
 import uuid
 from dataclasses import dataclass, field
+
+import botocore.exceptions
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -30,43 +35,70 @@ def invoke_agent(
     agent_alias_id: str,
     session_id: str,
     message: str,
+    max_retries: int = 2,
 ) -> InvocationResult:
     """Invoke a Bedrock Agent and return a structured result.
 
     Adapted from src/frontend/app.py invoke_agent(), but decoupled from
     Streamlit and returning an InvocationResult instead of a tuple.
+
+    Retries on transient EventStreamError or ClientError exceptions up to
+    ``max_retries`` times with a 5-second backoff between attempts.
     """
-    start = time.monotonic()
+    last_error: Exception | None = None
 
-    response = client.invoke_agent(
-        agentId=agent_id,
-        agentAliasId=agent_alias_id,
-        sessionId=session_id,
-        inputText=message,
-        enableTrace=True,
-    )
+    for attempt in range(1 + max_retries):
+        try:
+            start = time.monotonic()
 
-    response_text = ""
-    trace_events = []
+            response = client.invoke_agent(
+                agentId=agent_id,
+                agentAliasId=agent_alias_id,
+                sessionId=session_id,
+                inputText=message,
+                enableTrace=True,
+            )
 
-    for event in response.get("completion", []):
-        if "chunk" in event:
-            chunk = event["chunk"]
-            if "bytes" in chunk:
-                response_text += chunk["bytes"].decode("utf-8")
-        if "trace" in event:
-            trace_events.append(event["trace"])
+            response_text = ""
+            trace_events = []
 
-    duration_ms = int((time.monotonic() - start) * 1000)
-    parsed_steps = parse_trace(trace_events)
+            for event in response.get("completion", []):
+                if "chunk" in event:
+                    chunk = event["chunk"]
+                    if "bytes" in chunk:
+                        response_text += chunk["bytes"].decode("utf-8")
+                if "trace" in event:
+                    trace_events.append(event["trace"])
 
-    return InvocationResult(
-        response_text=response_text,
-        trace_events=trace_events,
-        parsed_steps=parsed_steps,
-        session_id=session_id,
-        duration_ms=duration_ms,
-    )
+            duration_ms = int((time.monotonic() - start) * 1000)
+            parsed_steps = parse_trace(trace_events)
+
+            return InvocationResult(
+                response_text=response_text,
+                trace_events=trace_events,
+                parsed_steps=parsed_steps,
+                session_id=session_id,
+                duration_ms=duration_ms,
+            )
+
+        except (botocore.exceptions.EventStreamError, botocore.exceptions.ClientError) as exc:
+            last_error = exc
+            if attempt < max_retries:
+                logger.warning(
+                    "invoke_agent attempt %d/%d failed (%s), retrying in 5s...",
+                    attempt + 1,
+                    1 + max_retries,
+                    exc,
+                )
+                time.sleep(5)
+            else:
+                logger.error(
+                    "invoke_agent failed after %d attempt(s): %s",
+                    1 + max_retries,
+                    exc,
+                )
+
+    raise last_error  # type: ignore[misc]
 
 
 def parse_trace(trace_events: list[dict]) -> list[dict]:
@@ -106,9 +138,12 @@ def parse_trace(trace_events: list[dict]) -> list[dict]:
                     params = {}
                     for p in ag.get("parameters", []):
                         params[p.get("name", "")] = p.get("value", "")
+                    tool_name = ag.get("function") or ag.get("apiPath", "unknown")
+                    if tool_name.startswith("/"):
+                        tool_name = tool_name[1:]
                     steps.append({
                         "type": "Tool Call",
-                        "tool": ag.get("function", ag.get("apiPath", "unknown")),
+                        "tool": tool_name,
                         "action_group": ag.get("actionGroupName", ""),
                         "parameters": params,
                         "traceId": inv.get("traceId", ""),
@@ -161,6 +196,15 @@ def parse_trace(trace_events: list[dict]) -> list[dict]:
                 "type": "Guardrail",
                 "action": action,
                 "details": gt,
+            })
+
+        # Handle SDK_UNKNOWN_MEMBER for guardrail traces (older boto3 versions)
+        unknown = trace.get("SDK_UNKNOWN_MEMBER", {})
+        if unknown and unknown.get("name") == "guardrailTrace":
+            steps.append({
+                "type": "Guardrail",
+                "action": "BLOCKED",
+                "details": {"sdk_unknown": True},
             })
 
     return steps

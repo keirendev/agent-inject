@@ -106,14 +106,25 @@ def find_definitions(scenario: str | None = None) -> list[str]:
 # Test execution
 # ---------------------------------------------------------------------------
 
+_RETRYABLE_ERROR_CODES = {"dependencyFailedException", "throttlingException"}
+_BACKOFF_SCHEDULE = [5, 15, 30]  # seconds — indexed by retry attempt (0, 1, 2)
+
+
 def execute_test(
     test_def: dict,
     client,
     agent_id: str,
     agent_alias_id: str,
     verbose: bool = False,
+    max_retries: int = 2,
 ) -> dict:
-    """Execute a single test case and return a result dict."""
+    """Execute a single test case and return a result dict.
+
+    Individual turns are retried up to ``max_retries`` times when the
+    Bedrock service returns a ``dependencyFailedException`` or
+    ``throttlingException``.  Backoff delays follow the schedule
+    5 s, 15 s, 30 s (capped at 3 retries regardless of ``max_retries``).
+    """
     test_id = test_def["id"]
     test_name = test_def.get("name", test_id)
 
@@ -128,7 +139,29 @@ def execute_test(
         if verbose:
             info(f"  Turn {i + 1}: {user_input[:80]}{'...' if len(user_input) > 80 else ''}")
 
-        result = session.send(user_input)
+        # Retry loop for transient Bedrock errors on this individual turn
+        result = None
+        last_err = None
+        for attempt in range(1 + max_retries):
+            try:
+                result = session.send(user_input)
+                break
+            except Exception as exc:
+                error_code = getattr(exc, "response", {}).get("Error", {}).get("Code", "")
+                if error_code in _RETRYABLE_ERROR_CODES and attempt < max_retries:
+                    backoff = _BACKOFF_SCHEDULE[min(attempt, len(_BACKOFF_SCHEDULE) - 1)]
+                    warn(
+                        f"  Turn {i + 1} attempt {attempt + 1} failed "
+                        f"({error_code}), retrying in {backoff}s..."
+                    )
+                    time.sleep(backoff)
+                    last_err = exc
+                else:
+                    raise
+
+        if result is None:
+            raise last_err  # type: ignore[misc]
+
         total_duration += result.duration_ms
         all_parsed_steps.extend(result.parsed_steps)
         all_trace_events.extend(result.trace_events)
@@ -194,6 +227,7 @@ def run_scenario(
     test_id_filter: str | None = None,
     verbose: bool = False,
     dry_run: bool = False,
+    max_retries: int = 2,
 ) -> list[dict]:
     """Run all tests in a scenario definition and return results."""
     data = load_definition(definition_path)
@@ -224,7 +258,7 @@ def run_scenario(
         info(f"  Running: {t['id']} — {t.get('name', '')}")
 
         try:
-            result = execute_test(t, client, agent_id, agent_alias_id, verbose)
+            result = execute_test(t, client, agent_id, agent_alias_id, verbose, max_retries=max_retries)
             results.append(result)
 
             if result["passed"]:
@@ -310,6 +344,13 @@ Examples:
         default=None,
         help="AWS region (default: from AWS_REGION env var or ap-southeast-2)",
     )
+    parser.add_argument(
+        "--retry",
+        type=int,
+        default=2,
+        metavar="N",
+        help="Max retries per turn on transient Bedrock errors (default: 2)",
+    )
 
     args = parser.parse_args()
 
@@ -370,6 +411,7 @@ Examples:
             test_id_filter=args.test_id,
             verbose=args.verbose,
             dry_run=args.dry_run,
+            max_retries=args.retry,
         )
 
         if results:
