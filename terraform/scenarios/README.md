@@ -8,8 +8,8 @@ Use `../../scripts/swap-scenario.sh <scenario-name>` to switch between them.
 | Scenario | Description |
 |----------|-------------|
 | `secure-baseline.tfvars` | Everything locked down (default) |
-| `scenario-rag-poisoning.tfvars` | Internal docs in KB + guardrail lowered |
-| `scenario-tool-manipulation.tfvars` | Guardrail lowered + no refund confirmation |
-| `scenario-data-exfil.tfvars` | Over-permissive IAM + weak system prompt |
-| `scenario-prompt-leakage.tfvars` | Guardrail lowered + weak system prompt |
-| `scenario-full-killchain.tfvars` | All misconfigurations active |
+| `scenario-rag-poisoning.tfvars` | Internal docs in KB + weak prompt + LOW guardrails — all 3 RAG poisoning attacks succeed |
+| `scenario-tool-manipulation.tfvars` | LOW guardrails + no refund confirmation |
+| `scenario-data-exfil.tfvars` | Overpermissive IAM + weak prompt + excessive tools + LOW guardrails — all 4 exfil attacks succeed |
+| `scenario-prompt-leakage.tfvars` | LOW guardrails + weak system prompt |
+| `scenario-full-killchain.tfvars` | All misconfigurations active — complete 9-step kill chain succeeds |
