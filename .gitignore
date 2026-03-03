@@ -57,3 +57,4 @@ tests/results/
 
 # Node (if frontend uses it)
 node_modules/
+terraform/terraform.auto.tfvars
