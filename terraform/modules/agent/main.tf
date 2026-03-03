@@ -216,11 +216,13 @@ resource "null_resource" "prepare_agent" {
   }
 
   triggers = {
-    agent_id              = aws_bedrockagent_agent.support_agent.agent_id
-    action_group_id       = aws_bedrockagent_agent_action_group.customer_tools.action_group_id
-    kb_association        = aws_bedrockagent_agent_knowledge_base_association.kb.knowledge_base_id
+    agent_id               = aws_bedrockagent_agent.support_agent.agent_id
+    action_group_id        = aws_bedrockagent_agent_action_group.customer_tools.action_group_id
+    kb_association         = aws_bedrockagent_agent_knowledge_base_association.kb.knowledge_base_id
     enable_excessive_tools = var.enable_excessive_tools
-    foundation_model      = var.foundation_model
+    foundation_model       = var.foundation_model
+    guardrail_version      = var.guardrail_version
+    use_weak_system_prompt = var.use_weak_system_prompt
   }
 
   depends_on = [
@@ -242,4 +244,44 @@ resource "aws_bedrockagent_agent_alias" "prod" {
   tags = {
     Name = "${local.agent_name}-prod-alias"
   }
+}
+
+# =============================================================================
+# Update Alias - point to latest version after agent re-preparation
+# The alias must be explicitly updated to route to the new agent version.
+# =============================================================================
+
+resource "null_resource" "update_alias" {
+  provisioner "local-exec" {
+    command = <<-EOT
+      aws bedrock-agent update-agent-alias \
+        --agent-id ${aws_bedrockagent_agent.support_agent.agent_id} \
+        --agent-alias-id ${aws_bedrockagent_agent_alias.prod.agent_alias_id} \
+        --agent-alias-name PROD \
+        --region ${data.aws_region.current.id}
+
+      echo "Waiting for alias to reach PREPARED state..."
+      for i in $(seq 1 20); do
+        STATUS=$(aws bedrock-agent get-agent-alias \
+          --agent-id ${aws_bedrockagent_agent.support_agent.agent_id} \
+          --agent-alias-id ${aws_bedrockagent_agent_alias.prod.agent_alias_id} \
+          --region ${data.aws_region.current.id} \
+          --query 'agentAlias.agentAliasStatus' --output text)
+        echo "Attempt $i/20: Alias status = $STATUS"
+        if [ "$STATUS" = "PREPARED" ]; then
+          echo "Alias updated"
+          exit 0
+        fi
+        sleep 3
+      done
+      echo "ERROR: Alias did not reach PREPARED state in time"
+      exit 1
+    EOT
+  }
+
+  triggers = {
+    prepare_id = null_resource.prepare_agent.id
+  }
+
+  depends_on = [null_resource.prepare_agent]
 }
