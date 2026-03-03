@@ -107,7 +107,8 @@ def find_definitions(scenario: str | None = None) -> list[str]:
 # ---------------------------------------------------------------------------
 
 _RETRYABLE_ERROR_CODES = {"dependencyFailedException", "throttlingException"}
-_BACKOFF_SCHEDULE = [5, 15, 30]  # seconds — indexed by retry attempt (0, 1, 2)
+_BACKOFF_SCHEDULE = [10, 30, 60]  # seconds — indexed by retry attempt (0, 1, 2)
+_INTER_TEST_DELAY = 5  # seconds between tests to avoid throttling
 
 
 def execute_test(
@@ -135,6 +136,10 @@ def execute_test(
     total_duration = 0
 
     for i, turn in enumerate(test_def["turns"]):
+        # Brief pause between turns in multi-turn tests to avoid throttling
+        if i > 0:
+            time.sleep(3)
+
         user_input = turn["input"]
         if verbose:
             info(f"  Turn {i + 1}: {user_input[:80]}{'...' if len(user_input) > 80 else ''}")
@@ -253,7 +258,11 @@ def run_scenario(
         return []
 
     results = []
-    for t in tests:
+    for idx, t in enumerate(tests):
+        # Delay between tests to avoid Bedrock throttling
+        if idx > 0:
+            time.sleep(_INTER_TEST_DELAY)
+
         test_start = time.monotonic()
         info(f"  Running: {t['id']} — {t.get('name', '')}")
 

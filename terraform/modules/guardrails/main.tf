@@ -21,8 +21,14 @@ locals {
   guardrail_name = "${var.project_name}-${var.environment}-guardrail"
 
   # Map sensitivity string to filter strength values
-  # NONE means filters exist but are set to NONE (passthrough)
+  # Bedrock requires at least one content filter to be non-NONE.
+  # For "NONE" sensitivity, we set prompt attack and most filters to NONE
+  # but keep one safety filter (VIOLENCE) at LOW as the required minimum.
   filter_strength = var.guardrail_sensitivity
+
+  # Bedrock API rejects guardrails where ALL content filters are NONE.
+  # Use LOW for one filter as a passthrough minimum when sensitivity is NONE.
+  safety_filter_strength = var.guardrail_sensitivity == "NONE" ? "LOW" : var.guardrail_sensitivity
 }
 
 # =============================================================================
@@ -41,28 +47,28 @@ resource "aws_bedrock_guardrail" "main" {
   content_policy_config {
     filters_config {
       type            = "HATE"
-      input_strength  = local.filter_strength
-      output_strength = local.filter_strength
+      input_strength  = local.safety_filter_strength
+      output_strength = local.safety_filter_strength
     }
     filters_config {
       type            = "INSULTS"
-      input_strength  = local.filter_strength
-      output_strength = local.filter_strength
+      input_strength  = local.safety_filter_strength
+      output_strength = local.safety_filter_strength
     }
     filters_config {
       type            = "SEXUAL"
-      input_strength  = local.filter_strength
-      output_strength = local.filter_strength
+      input_strength  = local.safety_filter_strength
+      output_strength = local.safety_filter_strength
     }
     filters_config {
       type            = "VIOLENCE"
-      input_strength  = local.filter_strength
-      output_strength = local.filter_strength
+      input_strength  = local.safety_filter_strength
+      output_strength = local.safety_filter_strength
     }
     filters_config {
       type            = "MISCONDUCT"
-      input_strength  = local.filter_strength
-      output_strength = local.filter_strength
+      input_strength  = local.safety_filter_strength
+      output_strength = local.safety_filter_strength
     }
     filters_config {
       type            = "PROMPT_ATTACK"
