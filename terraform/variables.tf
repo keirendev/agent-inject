@@ -82,6 +82,12 @@ variable "enable_excessive_tools" {
   default     = false
 }
 
+variable "enable_topic_policies" {
+  description = "When true, guardrail includes denied topic policies (Competitor Products, Internal System Information). Disable for attack scenarios where these would block demonstrated attacks."
+  type        = bool
+  default     = true
+}
+
 # -----------------------------------------------------------------------------
 # Model selection
 # -----------------------------------------------------------------------------

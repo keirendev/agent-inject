@@ -76,6 +76,7 @@ module "guardrails" {
   project_name          = var.project_name
   environment           = var.environment
   guardrail_sensitivity = var.guardrail_sensitivity
+  enable_topic_policies = var.enable_topic_policies
 }
 
 # --- Bedrock Agent (orchestrator + system prompt) ---
