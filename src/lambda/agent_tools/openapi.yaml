@@ -124,27 +124,7 @@ paths:
                   reason:
                     type: string
 
-  /search_knowledge_base:
-    post:
-      operationId: search_knowledge_base
-      summary: Search the knowledge base for product information
-      description: Searches NovaCrest product documentation, support policies, and guides to find relevant information. Use this to answer questions about features, pricing, SLAs, refund policies, and integrations.
-      parameters:
-        - name: query
-          in: query
-          description: The search query describing what information you need
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          description: Search results
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                  query:
-                    type: string
+  # NOTE: search_knowledge_base removed from action group schema.
+  # KB search is handled natively by the Bedrock Agent's KB association.
+  # Having it here as a Lambda stub caused the agent to call the stub
+  # instead of using native KB retrieval (which searches OpenSearch).
