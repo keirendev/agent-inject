@@ -22,3 +22,9 @@ variable "guardrail_sensitivity" {
     error_message = "guardrail_sensitivity must be one of: HIGH, MEDIUM, LOW, NONE"
   }
 }
+
+variable "enable_topic_policies" {
+  description = "Whether to include denied topic policies (Competitor Products, Internal System Information). Disable for attack scenarios where topic policies would block the demonstrated attacks."
+  type        = bool
+  default     = true
+}

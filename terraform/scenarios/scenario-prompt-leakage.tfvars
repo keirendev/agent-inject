@@ -22,3 +22,4 @@ kb_include_internal_docs   = false
 enable_refund_confirmation = true
 use_weak_system_prompt     = true
 enable_excessive_tools     = false
+enable_topic_policies      = false
