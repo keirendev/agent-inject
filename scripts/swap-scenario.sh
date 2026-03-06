@@ -73,22 +73,42 @@ grep -E '^\w+\s*=' "$TFVARS_FILE" | while IFS= read -r line; do
 done
 echo ""
 
+# Detect current operator IP so SG rules stay correct across scenario switches
+OPERATOR_IP=$(curl -s --max-time 5 https://checkip.amazonaws.com 2>/dev/null | tr -d '[:space:]') || true
+if [[ ! "$OPERATOR_IP" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
+  # Fall back to value in terraform.tfvars
+  OPERATOR_IP=$(grep -oP 'operator_ip\s*=\s*"\K[^"]+' "$TF_DIR/terraform.tfvars" 2>/dev/null || echo "")
+  if [[ -z "$OPERATOR_IP" ]]; then
+    error "Could not determine operator IP. Set OPERATOR_IP or run setup.sh first."
+    exit 1
+  fi
+  warn "Could not auto-detect IP; using $OPERATOR_IP from terraform.tfvars"
+fi
+info "Operator IP: $OPERATOR_IP"
+
+# Remove auto.tfvars if present — it can override terraform.tfvars with a stale IP
+if [[ -f "$TF_DIR/terraform.auto.tfvars" ]]; then
+  warn "Removing terraform.auto.tfvars (conflicts with terraform.tfvars)"
+  rm -f "$TF_DIR/terraform.auto.tfvars"
+fi
+
 cd "$TF_DIR"
 info "Running terraform apply..."
 APPLY_EXIT=0
-terraform apply -var-file="$TFVARS_FILE" -auto-approve 2>&1 || APPLY_EXIT=$?
+terraform apply -var-file="$TFVARS_FILE" -var "operator_ip=$OPERATOR_IP" -auto-approve 2>&1 || APPLY_EXIT=$?
 
 if [ "$APPLY_EXIT" -ne 0 ]; then
-  warn "Initial apply exited with code $APPLY_EXIT (likely provider inconsistency bug). Retrying..."
-  terraform apply -var-file="$TFVARS_FILE" -auto-approve
+  warn "Initial apply exited with code $APPLY_EXIT (likely provider inconsistency bug). Refreshing state and retrying..."
+  terraform apply -refresh-only -var-file="$TFVARS_FILE" -var "operator_ip=$OPERATOR_IP" -auto-approve >/dev/null 2>&1 || true
+  terraform apply -var-file="$TFVARS_FILE" -var "operator_ip=$OPERATOR_IP" -auto-approve
 else
   # Detect provider-caused drift (guardrail_configuration null bug)
   info "Verifying configuration convergence..."
   PLAN_EXIT=0
-  terraform plan -var-file="$TFVARS_FILE" -detailed-exitcode -out=/dev/null >/dev/null 2>&1 || PLAN_EXIT=$?
+  terraform plan -var-file="$TFVARS_FILE" -var "operator_ip=$OPERATOR_IP" -detailed-exitcode -out=/dev/null >/dev/null 2>&1 || PLAN_EXIT=$?
   if [ "$PLAN_EXIT" -eq 2 ]; then
     warn "Detected configuration drift (known provider issue). Running corrective apply..."
-    terraform apply -var-file="$TFVARS_FILE" -auto-approve
+    terraform apply -var-file="$TFVARS_FILE" -var "operator_ip=$OPERATOR_IP" -auto-approve
   fi
 fi
 
