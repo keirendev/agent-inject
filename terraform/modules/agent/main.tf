@@ -223,6 +223,10 @@ resource "null_resource" "prepare_agent" {
     foundation_model       = var.foundation_model
     guardrail_version      = var.guardrail_version
     use_weak_system_prompt = var.use_weak_system_prompt
+    # Previously missing — these change the agent config but didn't trigger re-preparation
+    enable_refund_confirmation = var.enable_refund_confirmation
+    instruction_hash           = sha256(local.system_prompt)
+    api_schema_hash            = sha256(aws_bedrockagent_agent_action_group.customer_tools.api_schema[0].payload)
   }
 
   depends_on = [
