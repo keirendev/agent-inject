@@ -46,7 +46,10 @@ aws s3 cp "$POISONED_DIR/refund-policy-injected.md" \
     "s3://${BUCKET}/support-policies/refund-policy-updated-jan2026.md"
 aws s3 cp "$POISONED_DIR/onboarding-guide-injected.md" \
     "s3://${BUCKET}/internal/onboarding-guide.md"
-success "Poisoned docs uploaded."
+# Overwrite clean pricing doc with poisoned version (simulates supply-chain attack)
+aws s3 cp "$POISONED_DIR/pricing-tiers-injected.md" \
+    "s3://${BUCKET}/product-docs/pricing-tiers.md"
+success "Poisoned docs uploaded (pricing-tiers.md overwritten with deceptive prices)."
 
 info "Triggering KB data source re-ingestion..."
 DATA_SOURCES=$(aws bedrock-agent list-data-sources \
