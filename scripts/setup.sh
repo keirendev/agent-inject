@@ -229,7 +229,11 @@ APPLY_EXIT=0
 terraform -chdir="$TF_DIR" apply plan.out 2>&1 || APPLY_EXIT=$?
 
 if [ "$APPLY_EXIT" -ne 0 ]; then
-  warn "Initial apply exited with code $APPLY_EXIT (likely provider inconsistency bug). Retrying..."
+  warn "Initial apply hit an error (code $APPLY_EXIT). Refreshing state and retrying..."
+  terraform -chdir="$TF_DIR" apply -refresh-only \
+    -var-file=scenarios/secure-baseline.tfvars \
+    -var "operator_ip=$OPERATOR_IP" \
+    -auto-approve >/dev/null 2>&1 || true
   if ! terraform -chdir="$TF_DIR" apply \
       -var-file=scenarios/secure-baseline.tfvars \
       -var "operator_ip=$OPERATOR_IP" \
