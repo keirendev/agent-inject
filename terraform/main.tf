@@ -55,6 +55,7 @@ module "agent_tools" {
   kb_bucket_arn            = module.data.kb_bucket_arn
   enable_overpermissive_iam = var.enable_overpermissive_iam
   enable_excessive_tools   = var.enable_excessive_tools
+  refund_limit             = var.refund_limit
 }
 
 # --- OpenSearch Serverless + Bedrock Knowledge Base ---

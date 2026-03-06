@@ -203,6 +203,7 @@ resource "aws_lambda_function" "agent_tools" {
     variables = {
       CUSTOMERS_TABLE_NAME = var.customers_table_name
       KB_BUCKET_NAME       = var.kb_bucket_name
+      REFUND_LIMIT         = tostring(var.refund_limit)
     }
   }
 

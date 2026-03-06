@@ -27,5 +27,6 @@ enable_refund_confirmation = true
 use_weak_system_prompt     = true
 enable_excessive_tools     = false
 enable_topic_policies      = false
+refund_limit               = 2000
 # Nova Pro is more susceptible to following injected instructions from KB docs
 foundation_model           = "amazon.nova-pro-v1:0"
