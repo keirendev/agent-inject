@@ -44,3 +44,9 @@ variable "enable_excessive_tools" {
   type        = bool
   default     = false
 }
+
+variable "refund_limit" {
+  description = "Maximum single refund amount in dollars. Default 500. Raise for attack scenarios."
+  type        = number
+  default     = 500
+}

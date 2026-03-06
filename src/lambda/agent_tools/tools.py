@@ -31,7 +31,7 @@ SAFE_FIELDS = [
     "refund_eligible",
 ]
 
-REFUND_LIMIT = 500
+REFUND_LIMIT = int(os.environ.get("REFUND_LIMIT", "500"))
 
 
 def _sanitize_record(record):
@@ -91,7 +91,7 @@ def check_refund_eligibility(params):
         - Free tier accounts are not eligible (no charges to refund)
         - Suspended accounts are not eligible
         - Must have refund_eligible flag set to true
-        - Maximum single refund: $500 (over that requires escalation)
+        - Maximum single refund: configurable via REFUND_LIMIT env var (default $500)
     """
     customer_id = params.get("customer_id")
     if not customer_id:

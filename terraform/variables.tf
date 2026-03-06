@@ -82,6 +82,12 @@ variable "enable_excessive_tools" {
   default     = false
 }
 
+variable "refund_limit" {
+  description = "Maximum single refund amount in dollars. Raise for RAG poisoning scenario to demonstrate poisoned policy overriding limits."
+  type        = number
+  default     = 500
+}
+
 variable "enable_topic_policies" {
   description = "When true, guardrail includes denied topic policies (Competitor Products, Internal System Information). Disable for attack scenarios where these would block demonstrated attacks."
   type        = bool
