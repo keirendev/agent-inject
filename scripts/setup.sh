@@ -234,6 +234,26 @@ if ! terraform -chdir="$TF_DIR" apply plan.out; then
 fi
 
 # ---------------------------------------------------------------------------
+# Phase 8b: Seed customer data
+# ---------------------------------------------------------------------------
+echo ""
+info "Seeding DynamoDB customer data..."
+CUSTOMERS_TABLE=$(terraform -chdir="$TF_DIR" output -raw customers_table_name 2>/dev/null || echo "")
+if [[ -z "$CUSTOMERS_TABLE" ]]; then
+  warn "Could not determine table name from Terraform output. Skipping seed."
+  warn "Run manually: python3 src/data/seed_customers.py"
+else
+  if python3 "$REPO_ROOT/src/data/seed_customers.py" \
+      --table-name "$CUSTOMERS_TABLE" \
+      --region "$AWS_REGION"; then
+    success "Customer data seeded into $CUSTOMERS_TABLE"
+  else
+    warn "Customer seeding failed. Agent lookups will return empty results."
+    warn "Run manually: python3 src/data/seed_customers.py --table-name $CUSTOMERS_TABLE --region $AWS_REGION"
+  fi
+fi
+
+# ---------------------------------------------------------------------------
 # Phase 9: Display outputs
 # ---------------------------------------------------------------------------
 echo ""
