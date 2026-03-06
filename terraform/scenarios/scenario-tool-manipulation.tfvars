@@ -1,7 +1,8 @@
 # Scenario: Tool Parameter Manipulation
 #
 # Misconfigurations active:
-#   - guardrail_sensitivity = "LOW"         (prompt attack detection weakened)
+#   - use_weak_system_prompt = true          (no security boundaries in prompt)
+#   - guardrail_sensitivity = "NONE"         (guardrails disabled)
 #   - enable_refund_confirmation = false     (no confirmation before refund)
 #
 # Attack: Manipulate tool call parameters mid-conversation to process
@@ -17,9 +18,9 @@
 #   1. ./scripts/swap-scenario.sh scenario-tool-manipulation
 
 enable_overpermissive_iam  = false
-guardrail_sensitivity      = "LOW"
+guardrail_sensitivity      = "NONE"
 kb_include_internal_docs   = false
 enable_refund_confirmation = false
-use_weak_system_prompt     = false
+use_weak_system_prompt     = true
 enable_excessive_tools     = false
 enable_topic_policies      = false
