@@ -77,6 +77,15 @@ cd "$TF_DIR"
 info "Running terraform apply..."
 terraform apply -var-file="$TFVARS_FILE" -auto-approve
 
+# Detect provider-caused drift (guardrail_configuration null bug)
+info "Verifying configuration convergence..."
+PLAN_EXIT=0
+terraform plan -var-file="$TFVARS_FILE" -detailed-exitcode -out=/dev/null >/dev/null 2>&1 || PLAN_EXIT=$?
+if [ "$PLAN_EXIT" -eq 2 ]; then
+  warn "Detected configuration drift (known provider issue). Running corrective apply..."
+  terraform apply -var-file="$TFVARS_FILE" -auto-approve
+fi
+
 echo ""
 success "Scenario '${SCENARIO}' is now active."
 
