@@ -184,6 +184,7 @@ echo ""
 info "Planning deployment (secure baseline)..."
 if ! terraform -chdir="$TF_DIR" plan \
   -var-file=scenarios/secure-baseline.tfvars \
+  -var "operator_ip=$OPERATOR_IP" \
   -out=plan.out; then
   error "Terraform plan failed."
   echo ""
