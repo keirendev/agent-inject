@@ -170,6 +170,13 @@ EOF
   success "Generated $TFVARS_FILE"
 fi
 
+# Remove auto.tfvars if present — it overrides terraform.tfvars and causes
+# stale-IP issues when the operator's IP changes between sessions.
+if [[ -f "$TF_DIR/terraform.auto.tfvars" ]]; then
+  warn "Removing terraform.auto.tfvars (conflicts with terraform.tfvars)"
+  rm -f "$TF_DIR/terraform.auto.tfvars"
+fi
+
 # ---------------------------------------------------------------------------
 # Phase 5: Terraform init
 # ---------------------------------------------------------------------------
