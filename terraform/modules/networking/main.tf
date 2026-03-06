@@ -115,6 +115,14 @@ resource "aws_security_group" "frontend" {
   }
 }
 
+# Trigger resource — any change to operator_ip_cidr forces replacement of
+# the ingress rules via their replace_triggered_by lifecycle blocks.
+resource "null_resource" "operator_ip_change" {
+  triggers = {
+    operator_ip_cidr = var.operator_ip_cidr
+  }
+}
+
 resource "aws_vpc_security_group_ingress_rule" "frontend_https" {
   security_group_id = aws_security_group.frontend.id
   description       = "HTTPS from operator IP"
@@ -122,6 +130,14 @@ resource "aws_vpc_security_group_ingress_rule" "frontend_https" {
   from_port         = 443
   to_port           = 443
   ip_protocol       = "tcp"
+
+  # Force replacement (not in-place update) when operator IP changes.
+  # create_before_destroy avoids "duplicate rule" errors when a previous
+  # partial apply already created a rule with the new IP.
+  lifecycle {
+    replace_triggered_by = [null_resource.operator_ip_change]
+    create_before_destroy = true
+  }
 }
 
 resource "aws_vpc_security_group_ingress_rule" "frontend_http" {
@@ -131,6 +147,11 @@ resource "aws_vpc_security_group_ingress_rule" "frontend_http" {
   from_port         = 80
   to_port           = 80
   ip_protocol       = "tcp"
+
+  lifecycle {
+    replace_triggered_by = [null_resource.operator_ip_change]
+    create_before_destroy = true
+  }
 }
 
 resource "aws_vpc_security_group_ingress_rule" "frontend_streamlit" {
@@ -140,6 +161,11 @@ resource "aws_vpc_security_group_ingress_rule" "frontend_streamlit" {
   from_port         = 8501
   to_port           = 8501
   ip_protocol       = "tcp"
+
+  lifecycle {
+    replace_triggered_by = [null_resource.operator_ip_change]
+    create_before_destroy = true
+  }
 }
 
 resource "aws_vpc_security_group_egress_rule" "frontend_all" {
