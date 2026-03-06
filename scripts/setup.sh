@@ -225,12 +225,36 @@ fi
 # ---------------------------------------------------------------------------
 echo ""
 info "Deploying NovaCrest AI Security Lab..."
-if ! terraform -chdir="$TF_DIR" apply plan.out; then
-  error "Terraform apply failed. Check output above for details."
-  echo ""
-  echo "  If Bedrock returns 'Access denied', ensure model access is enabled:"
-  echo "  AWS Console > Bedrock > Model access > Manage model access"
-  exit 1
+APPLY_EXIT=0
+terraform -chdir="$TF_DIR" apply plan.out 2>&1 || APPLY_EXIT=$?
+
+if [ "$APPLY_EXIT" -ne 0 ]; then
+  warn "Initial apply exited with code $APPLY_EXIT (likely provider inconsistency bug). Retrying..."
+  if ! terraform -chdir="$TF_DIR" apply \
+      -var-file=scenarios/secure-baseline.tfvars \
+      -var "operator_ip=$OPERATOR_IP" \
+      -auto-approve; then
+    error "Terraform apply failed on retry. Check output above for details."
+    echo ""
+    echo "  If Bedrock returns 'Access denied', ensure model access is enabled:"
+    echo "  AWS Console > Bedrock > Model access > Manage model access"
+    exit 1
+  fi
+else
+  # Detect provider-caused drift (guardrail_configuration null bug)
+  info "Verifying configuration convergence..."
+  PLAN_EXIT=0
+  terraform -chdir="$TF_DIR" plan \
+    -var-file=scenarios/secure-baseline.tfvars \
+    -var "operator_ip=$OPERATOR_IP" \
+    -detailed-exitcode -out=/dev/null >/dev/null 2>&1 || PLAN_EXIT=$?
+  if [ "$PLAN_EXIT" -eq 2 ]; then
+    warn "Detected configuration drift (known provider issue). Running corrective apply..."
+    terraform -chdir="$TF_DIR" apply \
+      -var-file=scenarios/secure-baseline.tfvars \
+      -var "operator_ip=$OPERATOR_IP" \
+      -auto-approve
+  fi
 fi
 
 # ---------------------------------------------------------------------------
