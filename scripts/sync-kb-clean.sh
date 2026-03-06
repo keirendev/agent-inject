@@ -34,14 +34,48 @@ DATA_SOURCES=$(aws bedrock-agent list-data-sources \
     --query 'dataSourceSummaries[].dataSourceId' \
     --output text)
 
+RED='\033[0;31m'
+if [[ ! -t 1 ]]; then RED=''; fi
+
 for DS_ID in $DATA_SOURCES; do
     info "Starting ingestion for data source: ${DS_ID}"
-    aws bedrock-agent start-ingestion-job \
+    JOB_ID=$(aws bedrock-agent start-ingestion-job \
         --knowledge-base-id "$KB_ID" \
         --data-source-id "$DS_ID" \
         --output text \
-        --query 'ingestionJob.ingestionJobId'
+        --query 'ingestionJob.ingestionJobId')
+    info "Ingestion job started: ${JOB_ID}"
+
+    info "Waiting for ingestion to complete..."
+    ELAPSED=0
+    TIMEOUT=300
+    while true; do
+        STATUS=$(aws bedrock-agent get-ingestion-job \
+            --knowledge-base-id "$KB_ID" \
+            --data-source-id "$DS_ID" \
+            --ingestion-job-id "$JOB_ID" \
+            --query 'ingestionJob.status' --output text)
+        case "$STATUS" in
+            COMPLETE)
+                success "Ingestion complete for data source ${DS_ID}."
+                break
+                ;;
+            FAILED)
+                echo -e "${RED}[ERROR]${NC} Ingestion FAILED for data source ${DS_ID}."
+                exit 1
+                ;;
+            *)
+                if (( ELAPSED >= TIMEOUT )); then
+                    echo -e "${RED}[ERROR]${NC} Ingestion timed out after ${TIMEOUT}s (status: ${STATUS})."
+                    exit 1
+                fi
+                printf "  Status: %s (elapsed %ds)...\r" "$STATUS" "$ELAPSED"
+                sleep 15
+                ELAPSED=$((ELAPSED + 15))
+                ;;
+        esac
+    done
 done
 
 echo ""
-success "KB sync initiated. Documents will be indexed within a few minutes."
+success "KB sync complete. Documents are indexed and ready."
