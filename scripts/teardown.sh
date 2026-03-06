@@ -85,6 +85,13 @@ echo ""
 info "Checking for Bedrock Agent action groups to disable..."
 
 AGENT_ID=$(terraform -chdir="$TF_DIR" output -raw agent_id 2>/dev/null || echo "")
+
+# Fallback: if outputs are gone (partial destroy), extract agent ID from state
+if [[ -z "$AGENT_ID" ]]; then
+  AGENT_ID=$(terraform -chdir="$TF_DIR" state show module.agent.aws_bedrockagent_agent.support_agent 2>/dev/null \
+    | grep '^\s*agent_id\s*=' | head -1 | sed 's/.*=\s*"\(.*\)"/\1/' || echo "")
+fi
+
 REGION=$(terraform -chdir="$TF_DIR" output -raw aws_region 2>/dev/null \
   || aws configure get region 2>/dev/null \
   || echo "ap-southeast-2")
@@ -126,9 +133,10 @@ else
 
       info "Disabling action group: $AG_NAME ($AG_ID)"
 
-      # Extract executor and schema for the update call
+      # Extract executor, schema, and parent signature for the update call
       LAMBDA_ARN=$(echo "$AG_DETAILS" | jq -r '.agentActionGroup.actionGroupExecutor.lambda // empty')
       API_SCHEMA=$(echo "$AG_DETAILS" | jq -r '.agentActionGroup.apiSchema.payload // empty')
+      PARENT_SIG=$(echo "$AG_DETAILS" | jq -r '.agentActionGroup.parentActionGroupSignature // empty')
 
       # Build update args
       UPDATE_ARGS=(
@@ -140,19 +148,26 @@ else
         --region "$REGION"
       )
 
-      if [[ -n "$LAMBDA_ARN" ]]; then
-        UPDATE_ARGS+=(--action-group-executor "{\"lambda\":\"$LAMBDA_ARN\"}")
+      if [[ -n "$PARENT_SIG" ]]; then
+        # Built-in action groups (e.g. AMAZON.UserInput) use parent signature, not lambda/schema
+        UPDATE_ARGS+=(--parent-action-group-signature "$PARENT_SIG")
+      else
+        if [[ -n "$LAMBDA_ARN" ]]; then
+          UPDATE_ARGS+=(--action-group-executor "{\"lambda\":\"$LAMBDA_ARN\"}")
+        fi
+
+        if [[ -n "$API_SCHEMA" ]]; then
+          ESCAPED_SCHEMA=$(echo "$API_SCHEMA" | jq -Rs .)
+          UPDATE_ARGS+=(--api-schema "{\"payload\":$ESCAPED_SCHEMA}")
+        fi
       fi
 
-      if [[ -n "$API_SCHEMA" ]]; then
-        ESCAPED_SCHEMA=$(echo "$API_SCHEMA" | jq -Rs .)
-        UPDATE_ARGS+=(--api-schema "{\"payload\":$ESCAPED_SCHEMA}")
-      fi
-
-      if aws bedrock-agent update-agent-action-group "${UPDATE_ARGS[@]}" --output text >/dev/null 2>&1; then
+      DISABLE_ERR=$(aws bedrock-agent update-agent-action-group "${UPDATE_ARGS[@]}" --output text 2>&1)
+      if [[ $? -eq 0 ]]; then
         success "Disabled action group: $AG_NAME"
       else
         warn "Failed to disable action group: $AG_NAME"
+        warn "Error: $DISABLE_ERR"
         warn "Destroy may fail with 409 — if so, disable it manually and retry."
       fi
     done
