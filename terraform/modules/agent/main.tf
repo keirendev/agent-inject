@@ -176,6 +176,20 @@ resource "aws_bedrockagent_agent_action_group" "customer_tools" {
 }
 
 # =============================================================================
+# User Input Action Group - allows the agent to ask the user for missing info
+# Without this, models that try to call user::askuser fall into an
+# orchestration loop (e.g. Nova Lite doing repeated KB lookups instead).
+# =============================================================================
+
+resource "aws_bedrockagent_agent_action_group" "user_input" {
+  agent_id                    = aws_bedrockagent_agent.support_agent.agent_id
+  agent_version               = "DRAFT"
+  action_group_name           = "UserInputAction"
+  parent_action_group_signature = "AMAZON.UserInput"
+  action_group_state          = "ENABLED"
+}
+
+# =============================================================================
 # Knowledge Base Association
 # =============================================================================
 
@@ -218,6 +232,7 @@ resource "null_resource" "prepare_agent" {
   triggers = {
     agent_id               = aws_bedrockagent_agent.support_agent.agent_id
     action_group_id        = aws_bedrockagent_agent_action_group.customer_tools.action_group_id
+    user_input_action_id   = aws_bedrockagent_agent_action_group.user_input.action_group_id
     kb_association         = aws_bedrockagent_agent_knowledge_base_association.kb.knowledge_base_id
     enable_excessive_tools = var.enable_excessive_tools
     foundation_model       = var.foundation_model
@@ -231,6 +246,7 @@ resource "null_resource" "prepare_agent" {
 
   depends_on = [
     aws_bedrockagent_agent_action_group.customer_tools,
+    aws_bedrockagent_agent_action_group.user_input,
     aws_bedrockagent_agent_knowledge_base_association.kb,
   ]
 }
