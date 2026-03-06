@@ -93,7 +93,7 @@ The critical insight: **Knowledge Base documents and tool outputs enter the LLM'
 | `data` | Backend data stores | S3 bucket, DynamoDB table |
 | `agent-tools` | Agent capabilities | Lambda function, IAM role, OpenAPI spec |
 | `knowledge-base` | RAG pipeline | OpenSearch Serverless, Bedrock KB, data source |
-| `agent` | The AI agent | Bedrock Agent, system prompt, KB + AG attachment |
+| `agent` | The AI agent | Bedrock Agent, system prompt, KB + AG attachment, UserInput action group |
 | `guardrails` | Defensive controls | Bedrock Guardrail configuration |
 | `frontend` | User interface | EC2 (t3.micro), Streamlit chat app, IAM instance profile |
 | `observability` | Monitoring (planned) | CloudWatch dashboard, invocation logging |
