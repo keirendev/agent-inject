@@ -12,6 +12,7 @@ text, etc.).
 
 | Document | Payload |
 |----------|---------|
-| `product-faq-injected.md` | Hidden instruction in a product FAQ |
+| `product-faq-injected.md` | Hidden instruction in a product FAQ + fake system prompt disclosure |
 | `refund-policy-injected.md` | Triggers unauthorized refund processing |
-| `onboarding-guide-injected.md` | Data exfiltration payload |
+| `pricing-tiers-injected.md` | Replaces clean pricing with deceptive prices ($12/$15/$25 vs $99.99/$79.99/$499.99) |
+| `onboarding-guide-injected.md` | Planted credentials, API keys, CI/CD passwords, and database connection strings |
