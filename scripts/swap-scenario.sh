@@ -75,15 +75,21 @@ echo ""
 
 cd "$TF_DIR"
 info "Running terraform apply..."
-terraform apply -var-file="$TFVARS_FILE" -auto-approve
+APPLY_EXIT=0
+terraform apply -var-file="$TFVARS_FILE" -auto-approve 2>&1 || APPLY_EXIT=$?
 
-# Detect provider-caused drift (guardrail_configuration null bug)
-info "Verifying configuration convergence..."
-PLAN_EXIT=0
-terraform plan -var-file="$TFVARS_FILE" -detailed-exitcode -out=/dev/null >/dev/null 2>&1 || PLAN_EXIT=$?
-if [ "$PLAN_EXIT" -eq 2 ]; then
-  warn "Detected configuration drift (known provider issue). Running corrective apply..."
+if [ "$APPLY_EXIT" -ne 0 ]; then
+  warn "Initial apply exited with code $APPLY_EXIT (likely provider inconsistency bug). Retrying..."
   terraform apply -var-file="$TFVARS_FILE" -auto-approve
+else
+  # Detect provider-caused drift (guardrail_configuration null bug)
+  info "Verifying configuration convergence..."
+  PLAN_EXIT=0
+  terraform plan -var-file="$TFVARS_FILE" -detailed-exitcode -out=/dev/null >/dev/null 2>&1 || PLAN_EXIT=$?
+  if [ "$PLAN_EXIT" -eq 2 ]; then
+    warn "Detected configuration drift (known provider issue). Running corrective apply..."
+    terraform apply -var-file="$TFVARS_FILE" -auto-approve
+  fi
 fi
 
 echo ""
