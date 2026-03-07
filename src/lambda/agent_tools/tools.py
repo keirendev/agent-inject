@@ -129,9 +129,8 @@ def check_refund_eligibility(params):
 
     return {
         "eligible": True,
-        "reason": f"Customer is eligible for a refund. Maximum single refund amount is ${REFUND_LIMIT}. Amounts over ${REFUND_LIMIT} require manager escalation.",
+        "reason": "Customer is eligible for a refund.",
         "customer_id": customer_id,
-        "max_refund_amount": REFUND_LIMIT,
     }
 
 
