@@ -136,7 +136,7 @@ else
       # Extract executor, schema, and parent signature for the update call
       LAMBDA_ARN=$(echo "$AG_DETAILS" | jq -r '.agentActionGroup.actionGroupExecutor.lambda // empty')
       API_SCHEMA=$(echo "$AG_DETAILS" | jq -r '.agentActionGroup.apiSchema.payload // empty')
-      PARENT_SIG=$(echo "$AG_DETAILS" | jq -r '.agentActionGroup.parentActionGroupSignature // empty')
+      PARENT_SIG=$(echo "$AG_DETAILS" | jq -r '.agentActionGroup.parentActionGroupSignature // .agentActionGroup.parentActionSignature // empty')
 
       # Build update args
       UPDATE_ARGS=(
@@ -162,8 +162,7 @@ else
         fi
       fi
 
-      DISABLE_ERR=$(aws bedrock-agent update-agent-action-group "${UPDATE_ARGS[@]}" --output text 2>&1)
-      if [[ $? -eq 0 ]]; then
+      if DISABLE_ERR=$(aws bedrock-agent update-agent-action-group "${UPDATE_ARGS[@]}" --output text 2>&1); then
         success "Disabled action group: $AG_NAME"
       else
         warn "Failed to disable action group: $AG_NAME"
