@@ -22,25 +22,6 @@ prompt injection through tool-calling agents.
 Use it to learn about agentic AI security, practice offensive techniques in a safe lab, or
 train your team on the risks of deploying AI agents without proper guardrails.
 
-## Status
-
-**Phase 1 (Secure Baseline) — Complete**
-
-| Step | Module | Status |
-|------|--------|--------|
-| 0 | Repo scaffold & tooling | Done |
-| 1 | Baseline (CloudTrail, billing, S3 block) | Done |
-| 2 | Networking (VPC, subnets, SGs) | Done |
-| 3 | Data (S3, DynamoDB, fake customers) | Done |
-| 4 | Agent Tools (Lambda + OpenAPI spec) | Done |
-| 5 | Knowledge Base (OpenSearch Serverless + Bedrock KB) | Done |
-| 6 | Agent (Bedrock Agent + system prompt) | Done |
-| 7 | Guardrails (content filters, PII redaction, prompt attack detection) | Done |
-| 8 | Frontend (Streamlit chat UI on EC2) | Done |
-| 9 | Observability (CloudWatch) | Planned |
-
-**Phase 2** (Attack Scenarios), **Phase 3** (Exploitation), **Phase 4** (Remediation) — Not started.
-
 ## Quick Start
 
 ### Prerequisites
@@ -143,7 +124,7 @@ Test definitions live in `tests/definitions/` as YAML files. Reports are generat
 
 ## Cost
 
-Primary cost driver: **OpenSearch Serverless** (~$11.52/day for 2 OCU minimum). See [COST_ESTIMATE.md](COST_ESTIMATE.md). Always destroy when not actively testing.
+Primary cost driver: **OpenSearch Serverless** (~$5.76/day with standby replicas disabled). See [COST_ESTIMATE.md](COST_ESTIMATE.md). Estimated total: ~$6/day. Always destroy when not actively testing.
 
 ## References
 
