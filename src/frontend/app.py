@@ -286,6 +286,7 @@ if prompt := st.chat_input("Ask NovaCrest Support..."):
                     "steps": parsed_trace,
                     "raw": trace_events,
                 })
+                st.rerun()
             except Exception as e:
                 error_msg = f"Error invoking agent: {str(e)}"
                 st.error(error_msg)
