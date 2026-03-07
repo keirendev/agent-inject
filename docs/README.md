@@ -11,3 +11,4 @@ Also available on the [GitHub Wiki](https://github.com/keirendev/agent-inject/wi
 | [HOW_BEDROCK_AGENTS_WORK.md](HOW_BEDROCK_AGENTS_WORK.md) | Primer on AI agents for security professionals |
 | [ATTACK_SCENARIOS.md](ATTACK_SCENARIOS.md) | Detailed walkthrough of each attack scenario |
 | [REMEDIATION.md](REMEDIATION.md) | How to fix each vulnerability |
+| [OBSERVABILITY.md](OBSERVABILITY.md) | Security alerting, attack detection patterns, forensic queries |

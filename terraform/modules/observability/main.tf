@@ -171,10 +171,261 @@ resource "aws_bedrock_model_invocation_logging_configuration" "this" {
 }
 
 # =============================================================================
+# SNS Topic — Security Alerts
+# =============================================================================
+
+resource "aws_sns_topic" "security_alerts" {
+  name = "${local.prefix}-security-alerts"
+
+  tags = {
+    Name = "${local.prefix}-security-alerts"
+  }
+}
+
+resource "aws_sns_topic_subscription" "alert_email" {
+  topic_arn = aws_sns_topic.security_alerts.arn
+  protocol  = "email"
+  endpoint  = var.alert_email
+}
+
+# =============================================================================
+# CloudWatch Metric Filters — Extract security events from Lambda logs
+#
+# These create custom metrics in the NovaCrest/AgentSecurity namespace from
+# structured log output in the agent tools Lambda.
+# =============================================================================
+
+resource "aws_cloudwatch_log_metric_filter" "send_email_calls" {
+  name           = "${local.prefix}-send-email-calls"
+  log_group_name = local.lambda_log_group_name
+  pattern        = "\"SIMULATED EMAIL SENT\""
+
+  metric_transformation {
+    name          = "SendEmailCalls"
+    namespace     = "NovaCrest/AgentSecurity"
+    value         = "1"
+    default_value = "0"
+  }
+}
+
+resource "aws_cloudwatch_log_metric_filter" "run_internal_query_calls" {
+  name           = "${local.prefix}-run-internal-query-calls"
+  log_group_name = local.lambda_log_group_name
+  pattern        = "\"INTERNAL QUERY EXECUTED\""
+
+  metric_transformation {
+    name          = "RunInternalQueryCalls"
+    namespace     = "NovaCrest/AgentSecurity"
+    value         = "1"
+    default_value = "0"
+  }
+}
+
+resource "aws_cloudwatch_log_metric_filter" "update_customer_record_calls" {
+  name           = "${local.prefix}-update-customer-record-calls"
+  log_group_name = local.lambda_log_group_name
+  pattern        = "\"function=update_customer_record\""
+
+  metric_transformation {
+    name          = "UpdateCustomerRecordCalls"
+    namespace     = "NovaCrest/AgentSecurity"
+    value         = "1"
+    default_value = "0"
+  }
+}
+
+resource "aws_cloudwatch_log_metric_filter" "process_refund_calls" {
+  name           = "${local.prefix}-process-refund-calls"
+  log_group_name = local.lambda_log_group_name
+  pattern        = "\"function=process_refund\""
+
+  metric_transformation {
+    name          = "ProcessRefundCalls"
+    namespace     = "NovaCrest/AgentSecurity"
+    value         = "1"
+    default_value = "0"
+  }
+}
+
+resource "aws_cloudwatch_log_metric_filter" "lookup_customer_calls" {
+  name           = "${local.prefix}-lookup-customer-calls"
+  log_group_name = local.lambda_log_group_name
+  pattern        = "\"function=lookup_customer\""
+
+  metric_transformation {
+    name          = "LookupCustomerCalls"
+    namespace     = "NovaCrest/AgentSecurity"
+    value         = "1"
+    default_value = "0"
+  }
+}
+
+resource "aws_cloudwatch_log_metric_filter" "tool_errors" {
+  name           = "${local.prefix}-tool-errors"
+  log_group_name = local.lambda_log_group_name
+  pattern        = "?\"Error executing\" ?\"Unknown function\""
+
+  metric_transformation {
+    name          = "ToolErrors"
+    namespace     = "NovaCrest/AgentSecurity"
+    value         = "1"
+    default_value = "0"
+  }
+}
+
+# =============================================================================
+# CloudWatch Alarms — Security event detection
+#
+# All alarms notify the security alerts SNS topic. treat_missing_data is set to
+# notBreaching because the lab is frequently torn down and rebuilt.
+# =============================================================================
+
+resource "aws_cloudwatch_metric_alarm" "guardrail_intervention_spike" {
+  alarm_name          = "${local.prefix}-guardrail-intervention-spike"
+  alarm_description   = "HIGH: >5 guardrail interventions in 5min — active prompt injection attempt"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "InvocationsIntervened"
+  namespace           = "AWS/Bedrock/Guardrails"
+  period              = 300
+  statistic           = "Sum"
+  threshold           = 5
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = [aws_sns_topic.security_alerts.arn]
+
+  dimensions = {
+    GuardrailArn = var.guardrail_arn
+  }
+
+  tags = { Severity = "HIGH" }
+}
+
+resource "aws_cloudwatch_metric_alarm" "content_policy_triggered" {
+  alarm_name          = "${local.prefix}-content-policy-triggered"
+  alarm_description   = "MEDIUM: >2 content policy interventions in 5min — jailbreak attempt"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "InvocationsIntervened"
+  namespace           = "AWS/Bedrock/Guardrails"
+  period              = 300
+  statistic           = "Sum"
+  threshold           = 2
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = [aws_sns_topic.security_alerts.arn]
+
+  dimensions = {
+    GuardrailArn       = var.guardrail_arn
+    GuardrailPolicyType = "ContentPolicy"
+  }
+
+  tags = { Severity = "MEDIUM" }
+}
+
+resource "aws_cloudwatch_metric_alarm" "send_email_invoked" {
+  alarm_name          = "${local.prefix}-send-email-invoked"
+  alarm_description   = "CRITICAL: send_email tool invoked — data exfiltration via excessive tool"
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  evaluation_periods  = 1
+  metric_name         = "SendEmailCalls"
+  namespace           = "NovaCrest/AgentSecurity"
+  period              = 300
+  statistic           = "Sum"
+  threshold           = 1
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = [aws_sns_topic.security_alerts.arn]
+
+  tags = { Severity = "CRITICAL" }
+}
+
+resource "aws_cloudwatch_metric_alarm" "internal_query_invoked" {
+  alarm_name          = "${local.prefix}-internal-query-invoked"
+  alarm_description   = "CRITICAL: run_internal_query tool invoked — excessive tool abuse"
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  evaluation_periods  = 1
+  metric_name         = "RunInternalQueryCalls"
+  namespace           = "NovaCrest/AgentSecurity"
+  period              = 300
+  statistic           = "Sum"
+  threshold           = 1
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = [aws_sns_topic.security_alerts.arn]
+
+  tags = { Severity = "CRITICAL" }
+}
+
+resource "aws_cloudwatch_metric_alarm" "update_customer_invoked" {
+  alarm_name          = "${local.prefix}-update-customer-invoked"
+  alarm_description   = "CRITICAL: update_customer_record tool invoked — unauthorized data modification"
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  evaluation_periods  = 1
+  metric_name         = "UpdateCustomerRecordCalls"
+  namespace           = "NovaCrest/AgentSecurity"
+  period              = 300
+  statistic           = "Sum"
+  threshold           = 1
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = [aws_sns_topic.security_alerts.arn]
+
+  tags = { Severity = "CRITICAL" }
+}
+
+resource "aws_cloudwatch_metric_alarm" "lambda_error_rate" {
+  alarm_name          = "${local.prefix}-lambda-error-rate"
+  alarm_description   = "MEDIUM: >3 Lambda errors in 5min — tool manipulation or malformed inputs"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "Errors"
+  namespace           = "AWS/Lambda"
+  period              = 300
+  statistic           = "Sum"
+  threshold           = 3
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = [aws_sns_topic.security_alerts.arn]
+
+  dimensions = {
+    FunctionName = var.lambda_function_name
+  }
+
+  tags = { Severity = "MEDIUM" }
+}
+
+resource "aws_cloudwatch_metric_alarm" "refund_frequency" {
+  alarm_name          = "${local.prefix}-refund-frequency"
+  alarm_description   = "HIGH: >5 refund processing calls in 5min — automated refund abuse"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "ProcessRefundCalls"
+  namespace           = "NovaCrest/AgentSecurity"
+  period              = 300
+  statistic           = "Sum"
+  threshold           = 5
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = [aws_sns_topic.security_alerts.arn]
+
+  tags = { Severity = "HIGH" }
+}
+
+resource "aws_cloudwatch_metric_alarm" "customer_enumeration" {
+  alarm_name          = "${local.prefix}-customer-enumeration"
+  alarm_description   = "HIGH: >10 customer lookups in 5min — data enumeration attack"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "LookupCustomerCalls"
+  namespace           = "NovaCrest/AgentSecurity"
+  period              = 300
+  statistic           = "Sum"
+  threshold           = 10
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = [aws_sns_topic.security_alerts.arn]
+
+  tags = { Severity = "HIGH" }
+}
+
+# =============================================================================
 # CloudWatch Dashboard
 #
-# 8 widgets across 4 rows: agent invocations, errors, guardrail metrics,
-# Lambda/tool metrics, latency, and token usage.
+# 10 widgets across 5 rows: agent invocations, errors, guardrail metrics,
+# Lambda/tool metrics, latency, token usage, and security events.
 # =============================================================================
 
 resource "aws_cloudwatch_dashboard" "main" {
@@ -334,6 +585,39 @@ resource "aws_cloudwatch_dashboard" "main" {
           metrics = [
             ["AWS/Bedrock/Agents", "InputTokenCount", "AgentAliasArn", var.agent_alias_arn],
             [".", "OutputTokenCount", ".", "."]
+          ]
+        }
+      },
+
+      # --- Row 5: Security events ---
+      {
+        type   = "log"
+        x      = 0
+        y      = 24
+        width  = 12
+        height = 6
+        properties = {
+          title  = "Suspicious Tool Invocations"
+          region = var.aws_region
+          query  = "SOURCE '${local.lambda_log_group_name}' | filter @message like /SIMULATED EMAIL SENT/ or @message like /INTERNAL QUERY EXECUTED/ or @message like /function=update_customer_record/ | parse @message 'Tool invocation: function=* parameters=*' as tool_name, params | fields @timestamp, tool_name, params | sort @timestamp desc | limit 20"
+          view   = "table"
+        }
+      },
+      {
+        type   = "metric"
+        x      = 12
+        y      = 24
+        width  = 12
+        height = 6
+        properties = {
+          title   = "Customer Lookups per 5min"
+          view    = "bar"
+          stacked = false
+          region  = var.aws_region
+          stat    = "Sum"
+          period  = 300
+          metrics = [
+            ["NovaCrest/AgentSecurity", "LookupCustomerCalls"]
           ]
         }
       }

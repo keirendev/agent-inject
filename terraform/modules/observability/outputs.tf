@@ -17,3 +17,8 @@ output "invocation_log_bucket_name" {
   description = "S3 bucket storing Bedrock model invocation logs"
   value       = aws_s3_bucket.invocation_logs.id
 }
+
+output "sns_topic_arn" {
+  description = "ARN of the SNS topic for security alerts"
+  value       = aws_sns_topic.security_alerts.arn
+}

@@ -122,4 +122,5 @@ module "observability" {
   agent_alias_arn      = module.agent.agent_alias_arn
   guardrail_arn        = module.guardrails.guardrail_arn
   lambda_function_name = module.agent_tools.lambda_function_name
+  alert_email          = var.alert_email
 }
