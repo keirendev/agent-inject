@@ -77,8 +77,6 @@ paths:
                     type: string
                   customer_id:
                     type: string
-                  max_refund_amount:
-                    type: number
 
   /process_refund:
     post:
