@@ -125,3 +125,8 @@ output "invocation_log_bucket" {
   description = "S3 bucket storing Bedrock model invocation logs"
   value       = module.observability.invocation_log_bucket_name
 }
+
+output "security_alerts_sns_topic" {
+  description = "SNS topic ARN for security alert notifications"
+  value       = module.observability.sns_topic_arn
+}

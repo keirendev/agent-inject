@@ -31,3 +31,8 @@ variable "lambda_function_name" {
   description = "Name of the agent tools Lambda function (for dashboard metrics)"
   type        = string
 }
+
+variable "alert_email" {
+  description = "Email address for security alert notifications"
+  type        = string
+}

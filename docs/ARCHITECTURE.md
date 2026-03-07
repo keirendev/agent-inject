@@ -96,7 +96,7 @@ The critical insight: **Knowledge Base documents and tool outputs enter the LLM'
 | `agent` | The AI agent | Bedrock Agent, system prompt, KB + AG attachment, UserInput action group |
 | `guardrails` | Defensive controls | Bedrock Guardrail configuration |
 | `frontend` | User interface | EC2 (t3.micro), Streamlit chat app, IAM instance profile |
-| `observability` | Monitoring (planned) | CloudWatch dashboard, invocation logging |
+| `observability` | Logging, dashboards, security alerting | CloudWatch dashboard (10 widgets), model invocation logging (S3 + CW), 6 metric filters, 8 security alarms, SNS alerts |
 
 ## Security Controls (Secure Baseline)
 
