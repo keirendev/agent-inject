@@ -196,7 +196,12 @@ def render_trace(steps: list[dict]):
 
         elif step_type == "Guardrail":
             action = step.get("action", "")
-            label = "BLOCKED" if action == "BLOCKED" else action
+            if action == "BLOCKED":
+                label = "BLOCKED"
+            elif action == "NONE":
+                label = "PASSED (no intervention)"
+            else:
+                label = action
             st.markdown(f"**Guardrail: {label}**")
 
         elif step_type == "Model Input":
